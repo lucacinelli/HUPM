@@ -1,5 +1,7 @@
 # img_viewer.py
 
+import glob
+import re
 from copy import deepcopy
 import pandas as pd
 from pathlib import Path
@@ -43,6 +45,7 @@ utility = 5
 max_card = 5
 clustering_list = []
 feature_list = []
+item_list = []
 target_list = []
 
 menu_def = [['&File', ['&Open     Ctrl-O', '&Save       Ctrl-S', '&Properties', 'E&xit']],
@@ -86,7 +89,9 @@ list_column = [
     [
         sg.Radio('Clustering\n (red)', "radio", default=True, key='-clustering-'), #RED
         sg.Radio('Feature\n (green)', "radio", default=False, key='-feature-'), #GREEN
-        sg.Radio('Target\n (blue)', "radio", default=False, key='-target-') #BLUE
+        sg.Radio('Item\n (yellow)', "radio", default=False, key='-item-'),  # YELLOW
+        sg.Radio('Target\n (blue)', "radio", default=False, key='-target-'), #BLUE
+        sg.Radio('CLEAR\n selection\n ', "radio", default=False, key='-clear_selection-') #CLEAR
     ],
     [
         #TABLE
@@ -102,6 +107,9 @@ list_column = [
     ],
     [
         sg.HSeparator(pad=(50, 2)),
+    ],
+    [
+        sg.Column([[]], key='SHOW_PATTERNS_COL', scrollable=True, expand_x=True, expand_y=True)
     ],
     [
         sg.Text('PREDICTION'),
@@ -139,11 +147,11 @@ layout = [
 ]
 
 window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)", layout,
-                use_custom_titlebar=True, keep_on_top=True, right_click_menu=sg.MENU_RIGHT_CLICK_EDITME_VER_EXIT,
-                   resizable=True, finalize=True, size=(1400, 850), )#background_color='#f6f3ee')
+               # use_custom_titlebar=True, keep_on_top=True, right_click_menu=sg.MENU_RIGHT_CLICK_EDITME_VER_EXIT,
+                   resizable=True, finalize=True)# size=(1400, 850), )#background_color='#f6f3ee')
 #window['COL'].Widget.configure(borderwidth=5, relief=sg.DEFAULT_FRAME_RELIEF)
 #window['COL2'].Widget.configure(borderwidth=5, relief=sg.DEFAULT_FRAME_RELIEF)
-#window.Maximize()
+window.Maximize()
 #sg.theme_background_color('#f6f3ee')
 '''
 # add the plot to the window
@@ -154,6 +162,7 @@ fig_agg = rwi.draw_figure(window['canvas'].TKCanvas, fig)
 
 tablein.window=window
 fig_agg = None
+thread_started=False
 while True:
     event, values = window.read()
     initializeThread(False)
@@ -185,7 +194,7 @@ while True:
                 # create the local table to load in the TRAINING phase
                 df = pd.read_excel(filename)
                 tablein.create_data(headers=len(df.columns), cols=len(df.columns), rows=20,
-                                    size=20, inputdf=df.to_numpy(), headers_list=df.columns) #size = df[df.columns[0]].count()
+                                    size=df[df.columns[0]].count(), inputdf=df.to_numpy(), headers_list=df.columns) #size = df[df.columns[0]].count()
                 tablein.create_table()
 
                 #widget = window['TABLE'].Widget
@@ -231,9 +240,11 @@ while True:
                     clustering_list.append(clicked_col)
                 if clicked_col in feature_list:
                     feature_list.remove(clicked_col)
+                if clicked_col in item_list:
+                    item_list.remove(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n T {target_list}\n')
+                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-feature-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='green')
@@ -241,9 +252,23 @@ while True:
                     clustering_list.remove(clicked_col)
                 if clicked_col not in feature_list:
                     feature_list.append(clicked_col)
+                if clicked_col in item_list:
+                    item_list.remove(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n T {target_list}\n')
+                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+
+            elif values['-item-'] == True:
+                window[f'header_{clicked_col}'].update(background_color='yellow')
+                if clicked_col in clustering_list:
+                    clustering_list.remove(clicked_col)
+                if clicked_col in feature_list:
+                    feature_list.remove(clicked_col)
+                if clicked_col not in item_list:
+                    item_list.append(clicked_col)
+                if clicked_col in target_list:
+                    target_list.remove(clicked_col)
+                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-target-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='blue')
@@ -251,9 +276,23 @@ while True:
                     clustering_list.remove(clicked_col)
                 if clicked_col in feature_list:
                     feature_list.remove(clicked_col)
+                if clicked_col in item_list:
+                    item_list.remove(clicked_col)
                 if clicked_col not in target_list:
                     target_list.append(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n T {target_list}\n')
+                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+
+            elif values['-clear_selection-'] == True:
+                window[f'header_{clicked_col}'].update(background_color='white')
+                if clicked_col in clustering_list:
+                    clustering_list.remove(clicked_col)
+                if clicked_col in feature_list:
+                    feature_list.remove(clicked_col)
+                if clicked_col in item_list:
+                    item_list.remove(clicked_col)
+                if clicked_col in target_list:
+                    target_list.remove(clicked_col)
+                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
     #### FINE NUOVI EVENTI
 
@@ -268,15 +307,31 @@ while True:
         #rwi.run()
         #_thread.start_new_thread(rwi.run, ())  # New statement
 
+        tmp_list=[]
+        for f in feature_list:
+            tmp_list.append(tablein.data[0][f])
+        rwi.TARGETS=tmp_list
+        print(f"FEATURES: {rwi.TARGETS}")
 
         # write the EDB facts file
-        write_edb_fact(tablein.data, clustering_list, feature_list, target_list)
+        write_edb_fact(tablein.data, clustering_list, feature_list, item_list, target_list)
 
         # write the program
         write_program(DEFAULT_PROG)
 
-        #thr=initializeThread(True)
-        #thr.start()
+        # DECOMMENTARE per avviare WASP
+        thr=initializeThread(True)
+        thr.start()
+        thread_started=True
+
+    if 1==1:#thread_started and not thr.is_alive():
+        thread_started=False
+        print("thread morto!\n\n\n")
+
+
+
+
+
 
 
 
@@ -287,8 +342,57 @@ while True:
     '''
 
     if not isinstance(event, tuple) and event == '-STOP-':
-        rwi.terminate_process()
+        #rwi.terminate_process()
         msg.info("STOP process!")
+
+        #####
+
+        header_item, header_item_map = [], dict()
+        ind=0
+        for item in item_list:
+            header_item.append(tablein.data[0][item])
+            header_item_map[header_item[ind]]=ind
+            ind=ind+1
+        print(header_item_map)
+        print(header_item)
+
+        patterns_found=[]
+        for f_l in feature_list:
+            feature=tablein.data[0][f_l]
+            print(f"{feature}")
+            files = glob.glob("".join([os.getcwd(), f"/results/{feature}*.txt"]))
+            print(f"FILES {files[0]}")
+
+            maps=dict()
+            with open(files[0], 'r') as f:
+                for row in f.readlines():
+                    pattern=row.split('-- ')[1].strip()
+                    maps[pattern]=1
+
+            patterns_found.append(maps)
+
+        table_list = []
+        for p_f in patterns_found:
+            data=[[]]
+            data[0]=header_item
+            for (k,v) in p_f.items():
+                data.append([])
+                items=k.split(',')
+                for j in range(0, len(items), 2):
+                    data[header_item_map[items[j]]]=items[j]
+
+
+            t = Table()
+            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
+                                size=len(data), inputdf=data, headers_list=data[0])
+            t.create_table()
+            newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
+                                 scrollable=True)
+            table_list.append(newTable)
+
+        window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
+        window.refresh()
+        ####
 
     '''
     if event == '-PLOT-':

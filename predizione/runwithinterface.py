@@ -20,8 +20,7 @@ class Runwithinterface:
     def __init__(self):
         self.execute = True
         msg.info("run started")
-        global TARGETS
-        TARGETS = ['ALBUMIN_MEAN', 'BE_ARTERIAL_MEAN', 'BE_VENOUS_MEAN', 'BIC_ARTERIAL_MEAN', 'BIC_VENOUS_MEAN',
+        self.TARGETS = ['ALBUMIN_MEAN', 'BE_ARTERIAL_MEAN', 'BE_VENOUS_MEAN', 'BIC_ARTERIAL_MEAN', 'BIC_VENOUS_MEAN',
                    'BILLIRUBIN_MEAN', 'BLAST_MEAN',
                    'CALCIUM_MEAN', 'CREATININ_MEAN', 'FFA_MEAN', 'GGT_MEAN', 'GLUCOSE_MEAN', 'HEMATOCRITE_MEAN',
                    'HEMOGLOBIN_MEAN', 'INR_MEAN', 'LACTATE_MEAN',
@@ -60,6 +59,9 @@ class Runwithinterface:
         pearsons = list()
         anss = list()
         out = list()
+
+        with open('cancellare.txt', 'w') as f:
+            f.writelines(lines)
 
         # programma non incoherent
         if len(lines) != 1:
@@ -167,7 +169,8 @@ class Runwithinterface:
 
     def update_target(self, i):
         """Scrivo nel file il predicato di filtraggio del valore che mi interessa"""
-        predicate_values = ', '.join(map(lambda idx: 'A' if idx == i else '_', range(len(TARGETS))))
+        print(f"DA CANCE: update {self.TARGETS}")
+        predicate_values = ', '.join(map(lambda idx: 'A' if idx == i else '_', range(len(self.TARGETS))))
         predicate = f'transactionUtilityVector(V, A) :- transactionUtilityVector(V, {predicate_values}).'
         with open('tvu.edb', 'w') as out_file:
             out_file.write(predicate)
@@ -177,9 +180,9 @@ class Runwithinterface:
         """Setup per una run, una run è una serie di esperimenti con un target scelto e
         valori diversi per occurrencesThreshold"""
         msg.info(f"Target is {target}")
-        target_idx = TARGETS.index(target)
+        target_idx = self.TARGETS.index(target)
         self.update_target(target_idx)
-        self.start(TARGETS[target_idx])
+        self.start(self.TARGETS[target_idx])
 
 
     def exe_cmd(self):
@@ -200,7 +203,7 @@ class Runwithinterface:
             os.system('echo "TARGET,OCCURRENCE_T,UTILITY_T,MAX_ITEMSET,N_ANS,TIME" > results.csv')
 
             self.set_execute()
-            for (i, target) in enumerate(TARGETS):
+            for (i, target) in enumerate(self.TARGETS):
                 if self.execute:
                     print("target ", target)
                     self.single_run(target)
@@ -210,8 +213,8 @@ class Runwithinterface:
     def fig_maker(self, window):  # this should be called as a thread, then time.sleep() here would not freeze the GUI
         #names = ['group_a', 'group_b', 'group_c']
         np.random.seed(42)
-        values = np.random.random(size=int(len(TARGETS)/2))
-        plt.bar(TARGETS[:len(values)], values)
+        values = np.random.random(size=int(len(self.TARGETS)/2))
+        plt.bar(self.TARGETS[:len(values)], values)
         plt.xlabel('Features', horizontalalignment='right', x=0.1)
         ax = plt.gca()
         ax.tick_params(axis='both', labelrotation=40, labelsize=2)

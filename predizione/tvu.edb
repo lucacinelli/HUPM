@@ -1,1 +1,1 @@
-transactionUtilityVector(V, A) :- transactionUtilityVector(V, A, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _).
+transactionUtilityVector(V, A) :- transactionUtilityVector(V, A).

@@ -7,8 +7,8 @@ cardItemset(N) :- #count{ K,W : inCandidatePattern(K,W)} = N.
 inTransaction(Tid) :- transaction(Tid,_), not incomplete(Tid), not containsNan(Tid).
 incomplete(Tid) :- transaction(Tid,_), inCandidatePattern(K,W), not contains(Tid,K,W).
 contains(Tid,K,W) :- item(Tid, K, W).
-containsNan(Tid) :- transaction(Tid, PatientId), objectUtilityVector(PatientId, 'nan').
-containsNan(Tid) :- transaction(Tid, PatientId), transactionUtilityVector(Tid, 'nan').
+containsNan(Tid) :- transaction(Tid, PatientId), objectUtilityVector(PatientId, "nan").
+containsNan(Tid) :- transaction(Tid, PatientId), transactionUtilityVector(Tid, "nan").
 :- #count{ Tid: inTransaction(Tid) }=N, N < Tho, occurrencesThreshold(Tho).
 occurrenceUtility(Tid,MaxICU,Albumin) :- inTransaction(Tid), transaction(Tid, PatientId), objectUtilityVector(PatientId, MaxICU), transactionUtilityVector(Tid, Albumin).
 :- #count{ M : occurrenceUtility(T,M,_)} = 1.
