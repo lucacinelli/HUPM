@@ -1,0 +1,7 @@
+-0.7602387576939106 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0,dg1,0.0
+-0.7610322943698122 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0
+-0.7610322943698122 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0,dg2,0.0
+-0.7610322943698122 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0,dg3,0.0
+-0.7593411149124426 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0,htn,0.0
+-0.7593411149124426 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0,dg6,0.0
+-0.7633716806694664 -- immunocompromised,1.0,gender,1,above,0,dg4,0.0,dg5,0.0
