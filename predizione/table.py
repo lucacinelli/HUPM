@@ -79,12 +79,12 @@ class Table:
                 bg = 'white' if (x == 0) else 'white'
                 if y == 0:
                     line.append(
-                        sg.Text(self.data[y][x], size=(10, 1), pad=pad, justification='c', enable_events = True,
+                        sg.Text(self.data[y][x], size=(20, 1), pad=pad, justification='c', enable_events = True,
                                 text_color='black', background_color=bg, key=f"header_{x}")
                     )
                 else:
                     line.append(
-                        sg.Text(self.data[y][x], size=(10, 1), pad=pad, justification='c',
+                        sg.Text(self.data[y][x], size=(20, 1), pad=pad, justification='c',
                                 text_color='black', background_color=bg, key=str((y, x)))
                     )
             self.table.append(line)

@@ -61,6 +61,90 @@ def initializeThread(create=False):
         thr = threading.Thread(target=rwi.run, args=(), kwargs={})
         return thr
 
+def show_patterns(window, tablein, feature_list, item_list):
+
+    table_list=[]
+    Q=0
+    for feature in feature_list:
+        featurename = tablein.data[0][feature]
+        msg.info(f"sto controllando la feature {featurename}\n\n")
+        data=[]
+        data.append([featurename, 'TIMES'])
+        print(f"data {data} \n")
+
+        files = glob.glob("".join([os.getcwd(), f"/results/{featurename}*.txt"]))
+        with open(files[0], 'r') as f:
+            for row in f.readlines():
+                pattern = row.split('-- ')[1].strip()
+                msg.good(f"pattern found {pattern}\n\n")
+                data.append([pattern, '1'])
+
+
+        t = Table()
+        t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
+                      size=len(data), inputdf=data, headers_list=data[0])
+
+        print(f"print table {t.data}")
+        t.create_table()
+        newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
+                             scrollable=True, expand_x=True, expand_y=True)
+        Q=Q+1
+        table_list.append(newTable)
+
+    window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
+    window.refresh()
+    '''
+    table_list = []
+    for feature in feature_list:
+        print(f"Features {feature}!!!\n\n")
+        header_item, header_item_map = [], dict()
+
+        # create map on item to know the name of item
+        ind = 0
+        for item in item_list:
+            header_item.append(tablein.data[0][item])
+            header_item_map[header_item[ind]] = ind
+            ind = ind + 1
+
+        # split the pattern from the folder results in  order to know  pattern for each feature runned
+        patterns_found_feature = dict()
+        for index, f_l in enumerate(feature_list):
+            feature = tablein.data[0][f_l]
+            files = glob.glob("".join([os.getcwd(), f"/results/{feature}*.txt"]))
+
+            tmp = list() # fare in modo di geralizzare per contare quante volte
+            with open(files[0], 'r') as f:
+                for row in f.readlines():
+                    pattern = row.split('-- ')[1].strip()
+                    tmp.append(pattern)
+
+            patterns_found_feature[index] = tmp
+
+
+        for key, p_f in patterns_found_feature.items():
+            data = list()
+            data.append(header_item)
+            # data.append(key) bisogna appendere il nome della feature
+            for k in p_f:
+                data.append([])
+                items = k.split(',')
+                for j in range(0, len(items), 2):
+                    data[header_item_map[items[j]]] = items[j]
+
+            t = Table()
+            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
+                          size=len(data), inputdf=data, headers_list=data[0])
+            t.create_table()
+            newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
+                                 scrollable=True)
+            table_list.append(newTable)
+
+
+    window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
+    window.refresh()
+    ##### CREATE A FUNCTION ON THIS PART
+    '''
+
 
 def plot_draw(history):
     names = ['group_a', 'group_b', 'group_c']
@@ -296,6 +380,11 @@ while True:
 
     #### FINE NUOVI EVENTI
 
+    if not isinstance(event, tuple) and event == '-STOP-':
+        #rwi.terminate_process()
+        msg.info("STOP process!")
+
+        show_patterns(window, tablein, feature_list, item_list)
 
     if not isinstance(event, tuple) and event=="-predictionTargetOK-":
         print(values['predictionTarget'])
@@ -303,6 +392,7 @@ while True:
 
     if not isinstance(event, tuple) and event == "Exit" or event == sg.WIN_CLOSED:
         break
+
     if not isinstance(event, tuple) and event == '-RUN-':
         #rwi.run()
         #_thread.start_new_thread(rwi.run, ())  # New statement
@@ -341,58 +431,8 @@ while True:
             msg.good("ALIVE\n\n")
     '''
 
-    if not isinstance(event, tuple) and event == '-STOP-':
-        #rwi.terminate_process()
-        msg.info("STOP process!")
-
-        #####
-
-        header_item, header_item_map = [], dict()
-        ind=0
-        for item in item_list:
-            header_item.append(tablein.data[0][item])
-            header_item_map[header_item[ind]]=ind
-            ind=ind+1
-        print(header_item_map)
-        print(header_item)
-
-        patterns_found=[]
-        for f_l in feature_list:
-            feature=tablein.data[0][f_l]
-            print(f"{feature}")
-            files = glob.glob("".join([os.getcwd(), f"/results/{feature}*.txt"]))
-            print(f"FILES {files[0]}")
-
-            maps=dict()
-            with open(files[0], 'r') as f:
-                for row in f.readlines():
-                    pattern=row.split('-- ')[1].strip()
-                    maps[pattern]=1
-
-            patterns_found.append(maps)
-
-        table_list = []
-        for p_f in patterns_found:
-            data=[[]]
-            data[0]=header_item
-            for (k,v) in p_f.items():
-                data.append([])
-                items=k.split(',')
-                for j in range(0, len(items), 2):
-                    data[header_item_map[items[j]]]=items[j]
 
 
-            t = Table()
-            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
-                                size=len(data), inputdf=data, headers_list=data[0])
-            t.create_table()
-            newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
-                                 scrollable=True)
-            table_list.append(newTable)
-
-        window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
-        window.refresh()
-        ####
 
     '''
     if event == '-PLOT-':
