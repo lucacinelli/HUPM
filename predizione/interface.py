@@ -63,87 +63,58 @@ def initializeThread(create=False):
 
 def show_patterns(window, tablein, feature_list, item_list):
 
-    table_list=[]
-    Q=0
+    item_list_map_name=dict()
+    i=2
+    for item in item_list:
+        item_list_map_name[tablein.data[0][item]]=i  # albumina = 2
+        i=i+1
+
+    table_list, Q = [], 0
+    data, background_color_list = [], []
+    #data.append(['Feature Name', '# TIMES', 'Pearson'])
+    data.append(('Feature#' + 'Pearson#' + '#'.join(list(map(lambda x: tablein.data[0][x], item_list)))).split('#'))
+    print(data[0])
     for feature in feature_list:
         featurename = tablein.data[0][feature]
-        msg.info(f"sto controllando la feature {featurename}\n\n")
-        data=[]
-        data.append([featurename, 'TIMES'])
-        print(f"data {data} \n")
+
+        #data.append([featurename, ' ', ' '])
+        #Q = Q + 1
+        #background_color_list.append(Q)
 
         files = glob.glob("".join([os.getcwd(), f"/results/{featurename}*.txt"]))
         with open(files[0], 'r') as f:
             for row in f.readlines():
-                pattern = row.split('-- ')[1].strip()
-                msg.good(f"pattern found {pattern}\n\n")
-                data.append([pattern, '1'])
+                pearson = row.split(' -- ')[0].strip()
+                pattern = row.split(' -- ')[1].strip()
+                row_arr='A'.join([str('//') for i in range(len(item_list)+2)]).split('A')
+                row_arr[0]=featurename
+                row_arr[1]=pearson
+                pattern_items=pattern.split(',')
+                #print(f"patter_items {pattern_items}")
+                for p in range(0, len(pattern_items), 2):
+                    #print(f"p {p}")
+                    row_arr[item_list_map_name[pattern_items[p]]] = pattern_items[p+1]
+
+                #print(f"row {row_arr} \n")
+                data.append(row_arr)
+
+                #data.append([pattern, '1', pearson])
+                #Q = Q + 1
 
 
-        t = Table()
-        t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
-                      size=len(data), inputdf=data, headers_list=data[0])
 
-        print(f"print table {t.data}")
-        t.create_table()
-        newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
-                             scrollable=True, expand_x=True, expand_y=True)
-        Q=Q+1
-        table_list.append(newTable)
+    t = Table()
+    t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
+                  size=len(data), inputdf=data, headers_list=data[0])
 
-    window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
-    window.refresh()
-    '''
-    table_list = []
-    for feature in feature_list:
-        print(f"Features {feature}!!!\n\n")
-        header_item, header_item_map = [], dict()
-
-        # create map on item to know the name of item
-        ind = 0
-        for item in item_list:
-            header_item.append(tablein.data[0][item])
-            header_item_map[header_item[ind]] = ind
-            ind = ind + 1
-
-        # split the pattern from the folder results in  order to know  pattern for each feature runned
-        patterns_found_feature = dict()
-        for index, f_l in enumerate(feature_list):
-            feature = tablein.data[0][f_l]
-            files = glob.glob("".join([os.getcwd(), f"/results/{feature}*.txt"]))
-
-            tmp = list() # fare in modo di geralizzare per contare quante volte
-            with open(files[0], 'r') as f:
-                for row in f.readlines():
-                    pattern = row.split('-- ')[1].strip()
-                    tmp.append(pattern)
-
-            patterns_found_feature[index] = tmp
-
-
-        for key, p_f in patterns_found_feature.items():
-            data = list()
-            data.append(header_item)
-            # data.append(key) bisogna appendere il nome della feature
-            for k in p_f:
-                data.append([])
-                items = k.split(',')
-                for j in range(0, len(items), 2):
-                    data[header_item_map[items[j]]] = items[j]
-
-            t = Table()
-            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
-                          size=len(data), inputdf=data, headers_list=data[0])
-            t.create_table()
-            newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
-                                 scrollable=True)
-            table_list.append(newTable)
-
+    t.create_table(dimx=30, dimy=1, header_event=False) #, background_color='yellow', background_color_list=background_color_list)
+    newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
+                         scrollable=True, expand_x=True, expand_y=True)
+    table_list.append(newTable)
 
     window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
     window.refresh()
-    ##### CREATE A FUNCTION ON THIS PART
-    '''
+
 
 
 def plot_draw(history):
@@ -193,7 +164,7 @@ list_column = [
         sg.HSeparator(pad=(50, 2)),
     ],
     [
-        sg.Column([[]], key='SHOW_PATTERNS_COL', scrollable=True, expand_x=True, expand_y=True)
+        sg.Column([[]], key='SHOW_PATTERNS_COL', expand_x=True, expand_y=True)
     ],
     [
         sg.Text('PREDICTION'),

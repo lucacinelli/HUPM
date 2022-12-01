@@ -68,7 +68,7 @@ class Table:
             '''
 
 
-    def create_table(self):
+    def create_table(self, dimx=20, dimy=1, header_event=True, background_color='white', background_color_list=[]):
         self.table = []
         for y in range(0, self.rows):
             line = []
@@ -76,15 +76,15 @@ class Table:
                 x_pad = (self.gap, self.gap) if x == self.cols - 1 else (self.gap, 0)
                 y_pad = (self.gap, self.gap) if y == self.rows - 1 else (self.gap, 0)
                 pad = (x_pad, y_pad)
-                bg = 'white' if (x == 0) else 'white'
+                bg = background_color if (y in background_color_list) else 'white'
                 if y == 0:
                     line.append(
-                        sg.Text(self.data[y][x], size=(20, 1), pad=pad, justification='c', enable_events = True,
+                        sg.Text(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c', enable_events = header_event,
                                 text_color='black', background_color=bg, key=f"header_{x}")
                     )
                 else:
                     line.append(
-                        sg.Text(self.data[y][x], size=(20, 1), pad=pad, justification='c',
+                        sg.Text(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c',
                                 text_color='black', background_color=bg, key=str((y, x)))
                     )
             self.table.append(line)
