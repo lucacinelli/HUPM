@@ -43,10 +43,10 @@ tablein.create_table()
 occurrences = 5
 utility = 5
 max_card = 5
-clustering_list = []
-feature_list = []
-item_list = []
-target_list = []
+clustering_list = [0] #[]
+feature_list = [13, 14] #[]
+item_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] #[]
+target_list = [230] #[]
 
 menu_def = [['&File', ['&Open     Ctrl-O', '&Save       Ctrl-S', '&Properties', 'E&xit']],
             ['&Parameter', ['Occurrences', ['Occ 1', 'Occ 2', 'Occ 3', 'Occ 4', 'Occ 5', 'Occ 6', 'Occ 7', 'Occ 8', 'Occ 9', 'Occ 10'],
@@ -83,7 +83,9 @@ def show_patterns(window, tablein, feature_list, item_list):
 
         files = glob.glob("".join([os.getcwd(), f"/results/{featurename}*.txt"]))
         with open(files[0], 'r') as f:
-            for row in f.readlines():
+            for rrr, row in enumerate(f.readlines()):
+                if rrr > 10:
+                    break
                 pearson = row.split(' -- ')[0].strip()
                 pattern = row.split(' -- ')[1].strip()
                 row_arr='A'.join([str('//') for i in range(len(item_list)+2)]).split('A')
@@ -135,9 +137,10 @@ def plot_draw(history):
 
 # ===================================
 
+list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
 # First the window layout in 2 columns
-list_column = [
-    [sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
+#list_column = [
+    #[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
     [
         sg.Text(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green", key="text_thresholds"),
     ],
@@ -157,6 +160,14 @@ list_column = [
     [
         sg.HSeparator(pad=(50, 2))
     ],
+     [
+         sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-",
+                   button_color=None),
+         sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM",
+                   key="-STOP-"),
+         # sg.Button(enable_events=True, button_text="\n\n\n\n RUN E-HUPM", key="-P-"),
+        sg.Text('', key="execution_TEST"),
+     ],
     [
         sg.Text('SHOW PATTERNS', key="text_pattern"),
     ],
@@ -167,13 +178,11 @@ list_column = [
         sg.Column([[]], key='SHOW_PATTERNS_COL', expand_x=True, expand_y=True)
     ],
     [
-        sg.Text('PREDICTION'),
+         sg.HSeparator(pad=(50, 2)),
     ],
     [
-        sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-", button_color = None),
-        sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM", key="-STOP-"),
-        #sg.Button(enable_events=True, button_text="\n\n\n\n RUN E-HUPM", key="-P-"),
-    ],
+        sg.Text('PREDICTION'),
+    ]
 ]
 
 # For now will only show the name of the file that was chosen
@@ -187,7 +196,10 @@ image_viewer_column = [
 
 # ----- Full layout -----
 layout = [
-    list_column
+    [sg.Column(list_column_bar,  expand_x=True, expand_y=True, scrollable=True)]
+    # 1 list_column_bar,
+    # 2 [sg.Column(list_column,  expand_x=True, expand_y=True,  vertical_scroll_only=True, scrollable=True)]
+
     #[
     #sg.Column(list_column, scrollable=True, vertical_scroll_only = False, expand_y=True, expand_x=True),
     #sg.Column(table_col, expand_y=True, scrollable=True),
@@ -353,6 +365,7 @@ while True:
 
     if not isinstance(event, tuple) and event == '-STOP-':
         #rwi.terminate_process()
+        window['execution_TEST'].update('\nExecution TERMINATED!\n')
         msg.info("STOP process!")
 
         show_patterns(window, tablein, feature_list, item_list)
@@ -367,6 +380,8 @@ while True:
     if not isinstance(event, tuple) and event == '-RUN-':
         #rwi.run()
         #_thread.start_new_thread(rwi.run, ())  # New statement
+
+        window['execution_TEST'].update('\nExecution in progress...\n')
 
         tmp_list=[]
         for f in feature_list:
