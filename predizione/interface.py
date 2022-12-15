@@ -118,6 +118,17 @@ def show_patterns(window, tablein, feature_list, item_list):
     window.refresh()
 
 
+def setting_table_prediction(window, tablein):
+    tt = Table()
+    tt.create_data(headers=len(tablein.data[0]), cols=len(tablein.data[0]), rows=2,
+                  size=2, inputdf=tablein.data[:2], headers_list=tablein.data[0])
+
+    tt.create_table(dimx=30, dimy=1, header_event=False, prediction_event=True) #, background_color='yellow', background_color_list=background_color_list)
+    newTable = sg.Column(tt.table, background_color='black', pad=(0, 0), key='TABLE_2', scrollable=True)
+    window.extend_layout(window['PREDICTION_TABLE'], [[newTable, ]])
+    #window.refresh()
+    #window['PREDICTION_TABLE'].contents_changed()
+
 
 def plot_draw(history):
     names = ['group_a', 'group_b', 'group_c']
@@ -160,14 +171,14 @@ list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
     [
         sg.HSeparator(pad=(50, 2))
     ],
-     [
-         sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-",
+    [
+        sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-",
                    button_color=None),
-         sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM",
+        sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM",
                    key="-STOP-"),
-         # sg.Button(enable_events=True, button_text="\n\n\n\n RUN E-HUPM", key="-P-"),
+        # sg.Button(enable_events=True, button_text="\n\n\n\n RUN E-HUPM", key="-P-"),
         sg.Text('', key="execution_TEST"),
-     ],
+    ],
     [
         sg.Text('SHOW PATTERNS', key="text_pattern"),
     ],
@@ -182,7 +193,10 @@ list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
     ],
     [
         sg.Text('PREDICTION'),
-    ]
+    ],
+    [
+        sg.Column([[]], key='PREDICTION_TABLE', expand_x=True, expand_y=True)
+    ],
 ]
 
 # For now will only show the name of the file that was chosen
@@ -267,10 +281,16 @@ while True:
                 #widget = window['TABLE'].Widget
                 #widget.master.destroy()
 
+
+
                 newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), key='TABLE', scrollable=True)
+                setting_table_prediction(window, tablein)
                 window.extend_layout(window['TABLE_COL'], [[newTable, ]])
                 window.refresh()
                 window['TABLE_COL'].contents_changed()
+                window['PREDICTION_TABLE'].contents_changed()
+
+
 
             except Exception as e:
                 print("FILE in INPUT NOT FOUND with error e: ", e)
@@ -360,6 +380,12 @@ while True:
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
                 print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+
+    elif event.startswith('prediction_'):
+        bleh = window[event].get()
+        #teh = f'{bleh}1'
+        #window[event].update(value=teh)
+        print(bleh)
 
     #### FINE NUOVI EVENTI
 

@@ -68,7 +68,7 @@ class Table:
             '''
 
 
-    def create_table(self, dimx=20, dimy=1, header_event=True, background_color='white', background_color_list=[]):
+    def create_table(self, dimx=20, dimy=1, header_event=True, background_color='white', background_color_list=[], prediction_event=False):
         self.table = []
         for y in range(0, self.rows):
             line = []
@@ -83,10 +83,22 @@ class Table:
                                 text_color='black', background_color=bg, key=f"header_{x}")
                     )
                 else:
-                    line.append(
-                        sg.Text(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c',
-                                text_color='black', background_color=bg, key=str((y, x)))
-                    )
+                    if prediction_event==False:
+                        line.append(
+                            sg.Text(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c',
+                                    text_color='black', background_color=bg,
+                                        key=str((y, x)),
+                                      enable_events = prediction_event)
+                        )
+
+                    else:
+                        line.append(
+                            sg.Input(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c',
+                                    text_color='black', background_color=bg,
+                                    key=f"prediction_{x}",
+                                    enable_events=prediction_event)
+                        )
+
             self.table.append(line)
 
 
