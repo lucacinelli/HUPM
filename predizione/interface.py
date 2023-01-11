@@ -124,7 +124,7 @@ def setting_table_prediction(window, tablein):
                   size=2, inputdf=tablein.data[:2], headers_list=tablein.data[0])
 
     tt.create_table(dimx=30, dimy=1, header_event=False, prediction_event=True) #, background_color='yellow', background_color_list=background_color_list)
-    newTable = sg.Column(tt.table, background_color='black', pad=(0, 0), key='TABLE_2', scrollable=True)
+    newTable = sg.Column(tt.table, background_color='black', pad=(0, 0), size=(1200, 80), key='TABLE_2', scrollable=True)
     window.extend_layout(window['PREDICTION_TABLE'], [[newTable, ]])
     #window.refresh()
     #window['PREDICTION_TABLE'].contents_changed()
