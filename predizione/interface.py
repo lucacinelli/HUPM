@@ -19,6 +19,7 @@ from runwithinterface import Runwithinterface
 from preprocessing import Preprocessing
 from table import Table
 from ASP_utilities import *
+from regression import *
 
 option2 = {'resolution': 1, 'pad': (0, 0), 'disable_number_display': True,
            'enable_events': True}
@@ -26,7 +27,7 @@ option2 = {'resolution': 1, 'pad': (0, 0), 'disable_number_display': True,
 def inn(filenamepath):
     #df = pd.read_csv(filename, sep=';')
     df = pd.read_excel(filenamepath)
-    print(df)
+    #print(df)
     global table_data
     table_data = list(df.values.tolist())
     global table_headers
@@ -47,6 +48,7 @@ clustering_list = [0] #[]
 feature_list = [13, 14] #[]
 item_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] #[]
 target_list = [230] #[]
+table_input_pattern_prediction = Table()
 
 menu_def = [['&File', ['&Open     Ctrl-O', '&Save       Ctrl-S', '&Properties', 'E&xit']],
             ['&Parameter', ['Occurrences', ['Occ 1', 'Occ 2', 'Occ 3', 'Occ 4', 'Occ 5', 'Occ 6', 'Occ 7', 'Occ 8', 'Occ 9', 'Occ 10'],
@@ -73,7 +75,7 @@ def show_patterns(window, tablein, feature_list, item_list):
     data, background_color_list = [], []
     #data.append(['Feature Name', '# TIMES', 'Pearson'])
     data.append(('Feature#' + 'Pearson#' + '#'.join(list(map(lambda x: tablein.data[0][x], item_list)))).split('#'))
-    print(data[0])
+    #print(data[0])
     for feature in feature_list:
         featurename = tablein.data[0][feature]
 
@@ -110,7 +112,7 @@ def show_patterns(window, tablein, feature_list, item_list):
                   size=len(data), inputdf=data, headers_list=data[0])
 
     t.create_table(dimx=30, dimy=1, header_event=False) #, background_color='yellow', background_color_list=background_color_list)
-    newTable = sg.Column(t.table, background_color='black', pad=(0, 0), key=f'SHOW_PATTERNS_TABLE{Q}',
+    newTable = sg.Column(t.table, background_color='black', pad=(0, 0), size = (1200, 80), key=f'SHOW_PATTERNS_TABLE{Q}',
                          scrollable=True, expand_x=True, expand_y=True)
     table_list.append(newTable)
 
@@ -119,15 +121,31 @@ def show_patterns(window, tablein, feature_list, item_list):
 
 
 def setting_table_prediction(window, tablein):
-    tt = Table()
-    tt.create_data(headers=len(tablein.data[0]), cols=len(tablein.data[0]), rows=2,
+    msg.info('setting_table_prediction')
+    #table_input_pattern_prediction = Table()
+    #global table_input_pattern_prediction
+    table_input_pattern_prediction.create_data(headers=len(tablein.data[0]), cols=len(tablein.data[0]), rows=2,
                   size=2, inputdf=tablein.data[:2], headers_list=tablein.data[0])
 
-    tt.create_table(dimx=30, dimy=1, header_event=False, prediction_event=True) #, background_color='yellow', background_color_list=background_color_list)
-    newTable = sg.Column(tt.table, background_color='black', pad=(0, 0), size=(1200, 80), key='TABLE_2', scrollable=True)
+    table_input_pattern_prediction.create_table(dimx=30, dimy=1, header_event=False, prediction_event=True) #, background_color='yellow', background_color_list=background_color_list)
+    newTable = sg.Column(table_input_pattern_prediction.table, background_color='black', pad=(0, 0), size=(1200, 40), key='TABLE_2', scrollable=True)
     window.extend_layout(window['PREDICTION_TABLE'], [[newTable, ]])
     #window.refresh()
     #window['PREDICTION_TABLE'].contents_changed()
+
+    window['-START_PREDICTION-'].update(visible=True)
+    window['PREDICTION_RESULT'].update(visible=True)
+
+def extract_input_pattern_prediction():
+    msg.info('EXTRACT INPUT PATTERN PREDICTION')
+    input_pattern=[]
+    for rr in range(0, 2):
+        for cc in range(0, table_input_pattern_prediction.cols):
+            value = str(table_input_pattern_prediction.table[rr][cc].get())
+            print(value, end=" | ")
+            input_pattern.append(value)
+
+    return input_pattern
 
 
 def plot_draw(history):
@@ -195,8 +213,14 @@ list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
         sg.Text('PREDICTION'),
     ],
     [
-        sg.Column([[]], key='PREDICTION_TABLE', expand_x=True, expand_y=True)
+
+        sg.Column([[]], key='PREDICTION_TABLE', expand_x=True, expand_y=True),
     ],
+     [
+        sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
+                   button_color=None, visible=False),
+        sg.Text('ICU: FAKE NUMBER', key="PREDICTION_RESULT", visible=False),
+     ],
 ]
 
 # For now will only show the name of the file that was chosen
@@ -253,8 +277,8 @@ while True:
     if event in (sg.WIN_CLOSED, 'Exit'):
         break
 
-    sg.cprint(f'event = {event}', c=(sg.theme_background_color(), sg.theme_text_color()))
-    sg.cprint(f'values = {values}', c=(sg.theme_input_text_color(), sg.theme_input_background_color()))
+    ###sg.cprint(f'event = {event}', c=(sg.theme_background_color(), sg.theme_text_color()))
+    ###sg.cprint(f'values = {values}', c=(sg.theme_input_text_color(), sg.theme_input_background_color()))
 
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
@@ -266,10 +290,10 @@ while True:
         sg.popup_scrolled(__file__, sg.get_versions(), keep_on_top=True, non_blocking=True)
     elif not isinstance(event, tuple) and event.startswith('Open'):
         filename = sg.popup_get_file('file to open', no_window=True)
-        print(filename)
+        #print(filename)
         if Path(filename).is_file():
             try:
-                print("filename {%s}", filename)
+                #print("filename {%s}", filename)
                 # create the EDB facts for the program to execute
                 #preprocess.input(filename)
                 # create the local table to load in the TRAINING phase
@@ -281,9 +305,8 @@ while True:
                 #widget = window['TABLE'].Widget
                 #widget.master.destroy()
 
-
-
-                newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), key='TABLE', scrollable=True)
+                #ackground_color = 'black', pad = (0, 0), size = (1200, 80), key = 'TABLE_2', scrollable = True
+                newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), size = (1200, 80), key='TABLE', scrollable=True)
                 setting_table_prediction(window, tablein)
                 window.extend_layout(window['TABLE_COL'], [[newTable, ]])
                 window.refresh()
@@ -299,17 +322,17 @@ while True:
         sg.execute_editor(__file__)
     elif not isinstance(event, tuple) and event.startswith('Occ'):
         occurrences=event.split(" ")[1]
-        print("occurrences {} ", occurrences)
+        #print("occurrences {} ", occurrences)
         rwi.update_threshold_interface(occ_t=occurrences)
         window['text_thresholds'].update(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green")
     elif not isinstance(event, tuple) and event.startswith('Util'):
         utility = event.split(" ")[1]
-        print("utility {} ", utility)
+        #print("utility {} ", utility)
         rwi.update_threshold_interface(pearson_t=utility)
         window['text_thresholds'].update(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green")
     elif not isinstance(event, tuple) and event.startswith('MaxC'):
         max_card = event.split(" ")[1]
-        print("max_card {} ", max_card)
+        #print("max_card {} ", max_card)
         rwi.update_threshold_interface(max_card_itemset=max_card)
         window['text_thresholds'].update(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green")
 
@@ -317,9 +340,9 @@ while True:
     elif event.startswith('header_'):
         clicked_col = int(event.split("_")[1])
         if clicked_col>=0:
-            print("clicked _", clicked_col)
-            print("event ", event)
-            print(f"column clicked {tablein.data[0][clicked_col]}")
+            #print("clicked _", clicked_col)
+            #print("event ", event)
+            #print(f"column clicked {tablein.data[0][clicked_col]}")
 
             if values['-clustering-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='red')
@@ -331,7 +354,7 @@ while True:
                     item_list.remove(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-feature-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='green')
@@ -343,7 +366,7 @@ while True:
                     item_list.remove(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-item-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='yellow')
@@ -355,7 +378,7 @@ while True:
                     item_list.append(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-target-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='blue')
@@ -367,7 +390,7 @@ while True:
                     item_list.remove(clicked_col)
                 if clicked_col not in target_list:
                     target_list.append(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-clear_selection-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='white')
@@ -379,7 +402,7 @@ while True:
                     item_list.remove(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
     elif event.startswith('prediction_'):
         bleh = window[event].get()
@@ -388,6 +411,14 @@ while True:
         print(bleh)
 
     #### FINE NUOVI EVENTI
+
+    if not isinstance(event, tuple) and event == '-START_PREDICTION-':
+        msg.info("start prediction regression MODEL")
+        #regression_model(INPUT_PATTERN)
+
+        input_pattern = extract_input_pattern_prediction()
+        msg.good("print input_pattern")
+        print(input_pattern)
 
     if not isinstance(event, tuple) and event == '-STOP-':
         #rwi.terminate_process()
