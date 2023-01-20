@@ -1,3 +1,3 @@
-occurrencesThreshold(10).
+occurrencesThreshold(5).
 utilityThreshold("0.5").
 maxCardItemset(5).

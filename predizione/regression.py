@@ -12,9 +12,10 @@ import random
 def open_df():
     columns = 'PATIENT_VISIT_IDENTIFIER;AGE_ABOVE65;AGE_PERCENTIL;GENDER;DISEASE GROUPING 1;DISEASE GROUPING 2;DISEASE GROUPING 3;DISEASE GROUPING 4;DISEASE GROUPING 5;DISEASE GROUPING 6;HTN;IMMUNOCOMPROMISED;OTHER;ALBUMIN_MEAN;BE_ARTERIAL_MEAN;BE_VENOUS_MEAN;BIC_ARTERIAL_MEAN;BIC_VENOUS_MEAN;BILLIRUBIN_MEAN;BLAST_MEAN;CALCIUM_MEAN;CREATININ_MEAN;FFA_MEAN;GGT_MEAN;GLUCOSE_MEAN;HEMATOCRITE_MEAN;HEMOGLOBIN_MEAN;INR_MEAN;LACTATE_MEAN;LEUKOCYTES_MEAN;LINFOCITOS_MEAN;NEUTROPHILES_MEAN;P02_ARTERIAL_MEAN;P02_VENOUS_MEAN;PC02_ARTERIAL_MEAN;PC02_VENOUS_MEAN;PCR_MEAN;PH_ARTERIAL_MEAN;PH_VENOUS_MEAN;PLATELETS_MEAN;POTASSIUM_MEAN;SAT02_ARTERIAL_MEAN;SAT02_VENOUS_MEAN;SODIUM_MEAN;TGO_MEAN;TGP_MEAN;TTPA_MEAN;UREA_MEAN;DIMER_MEAN;BLOODPRESSURE_DIASTOLIC_MEAN;BLOODPRESSURE_SISTOLIC_MEAN;HEART_RATE_MEAN;RESPIRATORY_RATE_MEAN;TEMPERATURE_MEAN;OXYGEN_SATURATION_MEAN;WINDOW;ICU'
     columns = columns.split(';')
-    df = pd.read_excel('Kaggle_Sirio_Libanes_ICU_Prediction.xlsx')
+    df = pd.read_excel('../Kaggle_Sirio_Libanes_ICU_Prediction.xlsx')
     df = df[columns]
     df['TID'] = range(0, len(df))
+
     return df
 
 
@@ -42,6 +43,29 @@ def create_indexes(occ, pearson, maxcard):
 
     return targets, t2p
 
+def create_indexes_excel(occ, pearson, maxcard):
+    dir_files = f'results/json_{occ}_{pearson}_{maxcard}/'
+    json_files = filter(lambda f: f.endswith('.json'), os.listdir(dir_files))
+
+    targets = {}
+    # contiene una lista di elementi (p, target) dove p è un pattern che appare in t e target è il target considerato
+    t2p = defaultdict(list)
+
+    for json_file in json_files:
+        with open(dir_files + json_file) as ifile:
+            docs = json.load(ifile)
+        # target corrente
+        target = json_file.split(f'_{occ}_')[0]
+        # in targets ho per ogni target tutti i risultati
+        targets[target] = docs
+        for doc in docs:
+            # pattern in formato str
+            p = ' '.join(sorted(doc['p']))
+            # aggiungo il pattern all'index transaction
+            for t in map(int, doc['t']):
+                t2p[t].append((p, target))
+
+    return targets, t2p
 
 def regression_model(input_pattern):
     df = open_df()
@@ -49,6 +73,10 @@ def regression_model(input_pattern):
     data = list()
 
     for occ in (10, 15, 20):
+        # da cancellare:  LUCA
+        if occ>10:
+            exit(1)
+
         t_pearson, maxcard = 0.5, 5
         msg.info(f"Doing occ = {occ}, pearson = {t_pearson}, maxcard = {maxcard}")
         targets, t2p = create_indexes(occ, t_pearson, maxcard)

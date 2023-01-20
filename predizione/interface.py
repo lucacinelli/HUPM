@@ -142,7 +142,7 @@ def extract_input_pattern_prediction():
     for rr in range(0, 2):
         for cc in range(0, table_input_pattern_prediction.cols):
             value = str(table_input_pattern_prediction.table[rr][cc].get())
-            print(value, end=" | ")
+            #print(value, end=" | ")
             input_pattern.append(value)
 
     return input_pattern
@@ -316,7 +316,8 @@ while True:
 
 
             except Exception as e:
-                print("FILE in INPUT NOT FOUND with error e: ", e)
+                print("", end="")
+                #print("FILE in INPUT NOT FOUND with error e: ", e)
 
     elif not isinstance(event, tuple) and event == 'Edit Me':
         sg.execute_editor(__file__)
@@ -366,7 +367,7 @@ while True:
                     item_list.remove(clicked_col)
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
-                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
             elif values['-item-'] == True:
                 window[f'header_{clicked_col}'].update(background_color='yellow')
@@ -417,8 +418,10 @@ while True:
         #regression_model(INPUT_PATTERN)
 
         input_pattern = extract_input_pattern_prediction()
-        msg.good("print input_pattern")
-        print(input_pattern)
+        #msg.good("print input_pattern")
+        #print(input_pattern)
+        regression_model(input_pattern)
+
 
     if not isinstance(event, tuple) and event == '-STOP-':
         #rwi.terminate_process()
@@ -459,7 +462,7 @@ while True:
 
     if 1==1:#thread_started and not thr.is_alive():
         thread_started=False
-        print("thread morto!\n\n\n")
+        print("thread morto!")
 
 
 

@@ -102,6 +102,13 @@ def start(target):
                 # aggiungo nei results.csv
                 ifile.write(','.join(map(str, [target, occ_t, pearson_t, max_card_itemset, len(pearsons), run_usr])) + '\n')
 
+                # salvo in un file i risultati
+                with open(f'results/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json', 'w') as ofile:
+                    json.dump(pearsons, ofile)
+
+                print("PEARSOMNNNN \n\n")
+                print(pearsons)
+
 
 def update_threshold(occ_t, pearson_t=0.25, max_card_itemset=5):
     body = f'occurrencesThreshold({occ_t}).\nutilityThreshold("{pearson_t}").\nmaxCardItemset({max_card_itemset}).'
