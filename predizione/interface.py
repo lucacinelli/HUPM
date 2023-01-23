@@ -63,6 +63,64 @@ def initializeThread(create=False):
         thr = threading.Thread(target=rwi.run, args=(), kwargs={})
         return thr
 
+def show_training_dataset(window, filename):
+    if Path(filename).is_file():
+        try:
+            # print("filename {%s}", filename)
+            # create the EDB facts for the program to execute
+            # preprocess.input(filename)
+            # create the local table to load in the TRAINING phase
+
+            if "TABLE_TRAINING_DATASET" in window.AllKeysDict:
+                for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
+                    widget.destroy()
+
+            df = pd.read_excel(filename)
+            window.extend_layout(window['TRAINING_DATASET_COL'], [[sg.Table(values=df.values.tolist()[:100],
+                            headings=df.columns.tolist(),
+                            pad=(2,2),
+                            max_col_width=15,
+                            border_width=5,
+                            expand_y=True,
+                            auto_size_columns=True,
+                            justification="right",
+                            num_rows=min(df[df.columns[0]].count(), 20),
+                            key="TABLE_TRAINING_DATASET",
+                            enable_click_events=True
+            )]])
+
+            #SETTING OF TABLE
+            #setting_table_prediction(window, tablein)
+
+            '''
+            =====
+            tablein.create_data(headers=len(df.columns), cols=len(df.columns), rows=20,
+                                size=df[df.columns[0]].count(), inputdf=df.to_numpy(),
+                                headers_list=df.columns)  # size = df[df.columns[0]].count()
+            tablein.create_table()
+
+            # widget = window['TABLE'].Widget
+            # widget.master.destroy()
+
+            # ackground_color = 'black', pad = (0, 0), size = (1200, 80), key = 'TABLE_2', scrollable = True
+            newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), size=(1200, 80), key='TABLE',
+                                 scrollable=True)
+            # setting_table_prediction
+            window.extend_layout(window['TABLE_COL'], [[newTable, ]])
+            setting_table_prediction(window, tablein)
+
+            window.refresh()
+            window['TABLE_COL'].contents_changed()
+            window['PREDICTION_TABLE'].contents_changed()
+            '''
+            window.refresh()
+
+        except Exception as e:
+            print("", end="")
+            print("FILE in INPUT NOT FOUND with error e: ", e)
+
+
+
 def show_patterns(window, tablein, feature_list):
     data=[]
     data.append(['PATTERN', 'FEATURE', 'PEARSON'])
@@ -93,7 +151,7 @@ def show_patterns(window, tablein, feature_list):
     window.extend_layout(window['SHOW_PATTERNS_COL'], [[sg.Table(values=data[1::],
                             headings=data[0],
                             pad=(2,2),
-                            max_col_width=80,
+                            max_col_width=60,
                             row_height=15,
                             border_width=5,
                             expand_y=True,
@@ -185,7 +243,7 @@ list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
         #TABLE
         #sg.Column([[sg.Column(tablein.table, background_color='black', pad=(0, 0), key='TABLE', scrollable=True)]], key='TABLE_COL')
         # sg.Table(table_data, headings=table_headers, display_row_numbers=True, auto_size_columns=False, num_rows=min(25, len(data_example)), key="-RECORDSTABLE-"),
-        sg.Column([[]], key='TABLE_COL')
+        sg.Column([[]], key='TRAINING_DATASET_COL', expand_y=True)
     ],
     [
         sg.HSeparator(pad=(50, 2))
@@ -274,6 +332,10 @@ while True:
     event, values = window.read()
     initializeThread(False)
 
+    msg.fail("EVETTTT=!?!= \n")
+    msg.info(f"{event} and {values}")
+    msg.info("================")
+
     #### NUOVI EVENTI
 
     if event in (sg.WIN_CLOSED, 'Exit'):
@@ -284,44 +346,20 @@ while True:
 
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
+        # da cancellare da qui
+        show_training_dataset(window, "../Kaggle_Sirio_Libanes_ICU_Prediction.xlsx")
+        '''
         window.disappear()
         sg.popup('About this program', 'Simulated Menubar to accompany a simulated Titlebar',
                  'PySimpleGUI Version', sg.get_versions(), grab_anywhere=True, keep_on_top=True)
         window.reappear()
+        '''
     elif not isinstance(event, tuple) and event == 'Version':
         sg.popup_scrolled(__file__, sg.get_versions(), keep_on_top=True, non_blocking=True)
     elif not isinstance(event, tuple) and event.startswith('Open'):
         filename = sg.popup_get_file('file to open', no_window=True)
         #print(filename)
-        if Path(filename).is_file():
-            try:
-                #print("filename {%s}", filename)
-                # create the EDB facts for the program to execute
-                #preprocess.input(filename)
-                # create the local table to load in the TRAINING phase
-                df = pd.read_excel(filename)
-                tablein.create_data(headers=len(df.columns), cols=len(df.columns), rows=20,
-                                    size=df[df.columns[0]].count(), inputdf=df.to_numpy(), headers_list=df.columns) #size = df[df.columns[0]].count()
-                tablein.create_table()
-
-                #widget = window['TABLE'].Widget
-                #widget.master.destroy()
-
-                #ackground_color = 'black', pad = (0, 0), size = (1200, 80), key = 'TABLE_2', scrollable = True
-                newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), size = (1200, 80), key='TABLE', scrollable=True)
-                # setting_table_prediction
-                window.extend_layout(window['TABLE_COL'], [[newTable, ]])
-                setting_table_prediction(window, tablein)
-
-                window.refresh()
-                window['TABLE_COL'].contents_changed()
-                window['PREDICTION_TABLE'].contents_changed()
-
-
-
-            except Exception as e:
-                print("", end="")
-                #print("FILE in INPUT NOT FOUND with error e: ", e)
+        show_training_dataset(window, filename)
 
     elif not isinstance(event, tuple) and event == 'Edit Me':
         sg.execute_editor(__file__)
@@ -342,7 +380,18 @@ while True:
         window['text_thresholds'].update(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green")
 
 
-    elif event.startswith('header_'):
+    elif event[0:2] == ('TABLE_TRAINING_DATASET', '+CLICKED+'):
+        header_index=event[2][1]
+        print(f"header {header_index}")
+        window['TABLE_TRAINING_DATASET'].Update(row_colors=[[3, 'green']])
+        print(window['TABLE_TRAINING_DATASET'].Widget.column(f'#{header_index+1}', anchor='center'))
+        print(window['TABLE_TRAINING_DATASET'].TKTreeview.item(
+            window['TABLE_TRAINING_DATASET'].TKTreeview.get_children()[0])['values']
+        )
+
+
+        '''  
+    #elif event.startswith('header_'):
         clicked_col = int(event.split("_")[1])
         if clicked_col>=0:
             #print("clicked _", clicked_col)
@@ -408,8 +457,9 @@ while True:
                 if clicked_col in target_list:
                     target_list.remove(clicked_col)
                 #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+        '''
 
-    elif event.startswith('prediction_'):
+    elif not isinstance(event, tuple) and event.startswith('prediction_'):
         bleh = window[event].get()
         #teh = f'{bleh}1'
         #window[event].update(value=teh)
