@@ -85,6 +85,21 @@ def show_patterns(window, tablein, feature_list, item_list):
 
         data.append(["==========", "==========", "==========",])
 
+
+    window.extend_layout(window['SHOW_PATTERNS_COL'], [[sg.Table(values=data[1::],
+                            headings=data[0],
+                            pad=(2,2),
+                            max_col_width=45,
+                            row_height=20,
+                            border_width=5,
+                            expand_y=True,
+                            auto_size_columns=True,
+                            justification='right',
+                            # alternating_row_color='lightblue',
+                            num_rows=min(len(data), 20),
+                            key=f"TTT")]])
+
+    '''
     t=Table()
     t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
                   inputdf=data, headers_list=data[0])
@@ -92,6 +107,7 @@ def show_patterns(window, tablein, feature_list, item_list):
     newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
                        scrollable=True, expand_x=True, expand_y=True)
     window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
+    '''
     window.refresh()
 
 
