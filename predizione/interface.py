@@ -63,7 +63,7 @@ def initializeThread(create=False):
         thr = threading.Thread(target=rwi.run, args=(), kwargs={})
         return thr
 
-def show_patterns(window, tablein, feature_list, item_list):
+def show_patterns(window, tablein, feature_list):
     data=[]
     data.append(['PATTERN', 'FEATURE', 'PEARSON'])
 
@@ -86,18 +86,28 @@ def show_patterns(window, tablein, feature_list, item_list):
         data.append(["==========", "==========", "==========",])
 
 
+    if "TABLE_SHOW_PATTERNS" in window.AllKeysDict:
+        for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
+            widget.destroy()
+
     window.extend_layout(window['SHOW_PATTERNS_COL'], [[sg.Table(values=data[1::],
                             headings=data[0],
                             pad=(2,2),
-                            max_col_width=45,
-                            row_height=20,
+                            max_col_width=80,
+                            row_height=15,
                             border_width=5,
                             expand_y=True,
                             auto_size_columns=True,
                             justification='right',
                             # alternating_row_color='lightblue',
                             num_rows=min(len(data), 20),
-                            key=f"TTT")]])
+                            key="TABLE_SHOW_PATTERNS")]])
+
+    #if FFF>1 and FFF<5:
+    #    for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
+    #        print(widget)
+    #        widget.destroy()
+    #window[f'TTT{FFF-1}'].Widget.destroy()
 
     '''
     t=Table()
@@ -417,7 +427,7 @@ while True:
         regression_model(input_pattern)
 
     if not isinstance(event, tuple) and event == 'SHOW_PATTERNS':
-        show_patterns(window, tablein, feature_list, item_list)
+        show_patterns(window, tablein, feature_list)
 
     if not isinstance(event, tuple) and event == '-STOP-':
         #rwi.terminate_process()
