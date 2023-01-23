@@ -76,6 +76,8 @@ TARGETS = ['ALBUMIN_MEAN', 'BE_ARTERIAL_MEAN', 'BE_VENOUS_MEAN', 'BIC_ARTERIAL_M
 
 
 def start(target):
+    msg.fail("START!!!!")
+
     with open('results.csv', 'a') as ifile:
         pearson_t = 0.50
         for max_card_itemset in range(5, 6):

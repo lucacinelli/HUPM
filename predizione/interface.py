@@ -45,7 +45,7 @@ occurrences = 5
 utility = 5
 max_card = 5
 clustering_list = [0] #[]
-feature_list = [13, 14] #[]
+feature_list = [154, 149]#[13, 14] #[]
 item_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] #[]
 target_list = [230] #[]
 table_input_pattern_prediction = Table()
@@ -64,59 +64,34 @@ def initializeThread(create=False):
         return thr
 
 def show_patterns(window, tablein, feature_list, item_list):
+    data=[]
+    data.append(['PATTERN', 'FEATURE', 'PEARSON'])
 
-    item_list_map_name=dict()
-    i=2
-    for item in item_list:
-        item_list_map_name[tablein.data[0][item]]=i  # albumina = 2
-        i=i+1
-
-    table_list, Q = [], 0
-    data, background_color_list = [], []
-    #data.append(['Feature Name', '# TIMES', 'Pearson'])
-    data.append(('Feature#' + 'Pearson#' + '#'.join(list(map(lambda x: tablein.data[0][x], item_list)))).split('#'))
-    #print(data[0])
     for feature in feature_list:
-        featurename = tablein.data[0][feature]
+        feature_name=tablein.data[0][feature]
+        first_insert=1
+        file_pattern=glob.glob("".join([os.getcwd(), f"/results/{feature_name}*.txt"]))[0]
+        with open(file_pattern, 'r') as f:
+            for row in f.readlines():
+                row_items = row.split(' -- ')
+                pearson, pattern = "", ""
+                pearson = row_items[0].strip()
+                pattern = row_items[1].strip().split(',')
+                pattern_header = pattern[::2]
+                pattern_items = pattern[1::2]
+                pattern_concatenated = ', '.join([f"({h} : {pattern_items[x]})" for x, h in enumerate(pattern_header)])
+                data.append([pattern_concatenated, feature_name if first_insert==1 else feature_name, pearson])
+                first_insert=first_insert+1
 
-        #data.append([featurename, ' ', ' '])
-        #Q = Q + 1
-        #background_color_list.append(Q)
+        data.append(["==========", "==========", "==========",])
 
-        files = glob.glob("".join([os.getcwd(), f"/results/{featurename}*.txt"]))
-        with open(files[0], 'r') as f:
-            for rrr, row in enumerate(f.readlines()):
-                if rrr > 10:
-                    break
-                pearson = row.split(' -- ')[0].strip()
-                pattern = row.split(' -- ')[1].strip()
-                row_arr='A'.join([str('//') for i in range(len(item_list)+2)]).split('A')
-                row_arr[0]=featurename
-                row_arr[1]=pearson
-                pattern_items=pattern.split(',')
-                #print(f"patter_items {pattern_items}")
-                for p in range(0, len(pattern_items), 2):
-                    #print(f"p {p}")
-                    row_arr[item_list_map_name[pattern_items[p]]] = pattern_items[p+1]
-
-                #print(f"row {row_arr} \n")
-                data.append(row_arr)
-
-                #data.append([pattern, '1', pearson])
-                #Q = Q + 1
-
-
-
-    t = Table()
-    t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data),
-                  size=len(data), inputdf=data, headers_list=data[0])
-
-    t.create_table(dimx=30, dimy=1, header_event=False) #, background_color='yellow', background_color_list=background_color_list)
-    newTable = sg.Column(t.table, background_color='black', pad=(0, 0), size = (1200, 80), key=f'SHOW_PATTERNS_TABLE{Q}',
-                         scrollable=True, expand_x=True, expand_y=True)
-    table_list.append(newTable)
-
-    window.extend_layout(window['SHOW_PATTERNS_COL'], [table_list])
+    t=Table()
+    t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
+                  inputdf=data, headers_list=data[0])
+    t.create_table(dimx=60, dimy=2, header_event=False)
+    newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
+                       scrollable=True, expand_x=True, expand_y=True)
+    window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
     window.refresh()
 
 
@@ -198,7 +173,8 @@ list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
         sg.Text('', key="execution_TEST"),
     ],
     [
-        sg.Text('SHOW PATTERNS', key="text_pattern"),
+        sg.Text('PATTERNS', key="text_pattern"),
+        sg.Button(enable_events=True, button_text="SHOW", key="SHOW_PATTERNS")
     ],
     [
         sg.HSeparator(pad=(50, 2)),
@@ -307,8 +283,10 @@ while True:
 
                 #ackground_color = 'black', pad = (0, 0), size = (1200, 80), key = 'TABLE_2', scrollable = True
                 newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), size = (1200, 80), key='TABLE', scrollable=True)
-                setting_table_prediction(window, tablein)
+                # setting_table_prediction
                 window.extend_layout(window['TABLE_COL'], [[newTable, ]])
+                setting_table_prediction(window, tablein)
+
                 window.refresh()
                 window['TABLE_COL'].contents_changed()
                 window['PREDICTION_TABLE'].contents_changed()
@@ -422,13 +400,13 @@ while True:
         #print(input_pattern)
         regression_model(input_pattern)
 
+    if not isinstance(event, tuple) and event == 'SHOW_PATTERNS':
+        show_patterns(window, tablein, feature_list, item_list)
 
     if not isinstance(event, tuple) and event == '-STOP-':
         #rwi.terminate_process()
         window['execution_TEST'].update('\nExecution TERMINATED!\n')
         msg.info("STOP process!")
-
-        show_patterns(window, tablein, feature_list, item_list)
 
     if not isinstance(event, tuple) and event=="-predictionTargetOK-":
         print(values['predictionTarget'])
@@ -462,7 +440,7 @@ while True:
 
     if 1==1:#thread_started and not thr.is_alive():
         thread_started=False
-        print("thread morto!")
+        #print("thread morto!")
 
 
 

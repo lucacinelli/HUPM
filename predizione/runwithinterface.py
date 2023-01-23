@@ -1,4 +1,5 @@
 from aspars import ASPars
+from scipy import stats
 from wasabi import msg
 import json
 import os
@@ -14,6 +15,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 
 PATTERN_RE = re.compile('inCandidatePattern\((.*?)\)')
+PATTERNS_RE_JSON = re.compile('inCandidatePattern\("(.*?)","(.*?)"\)')
+OCCURRENCES_RE = re.compile('occurrenceUtility\((\d+),([01]),"(.*?)"\)')
 
 class Runwithinterface:
 
@@ -99,7 +102,27 @@ class Runwithinterface:
 
         msg.fail(f"Min, media, max pearson non valide: {min(pearsons)} {sum(pearsons) / float(len(pearsons))} {max(pearsons)}")
         return (pearsons, anss)
-    
+
+    def parse_ans_JSON(self, ans, pearson, covered_transactions):
+        """Parserizza l'answerset e ritorna un JSON con i valori necessari"""
+        patterns = list(map(lambda x: f'{x[1]}={x[2]}', re.finditer(PATTERNS_RE_JSON, ans)))
+        return {
+            'p': patterns,  # pattern
+            'len_p': len(patterns),  # (len) pattern
+            't': covered_transactions,  # transazioni coperte
+            'len_t': len(covered_transactions),  # (len) transazioni coperte
+            'pe': pearson,  # pearson
+        }
+
+    def compute_pearson_and_covered_transactions(self, ans):
+        """Calcola la pearson"""
+        occurrences = re.findall(OCCURRENCES_RE, ans)
+        covered_transactions = list(map(lambda occ: occ[0], occurrences))
+        icu = np.fromiter(map(lambda occ: occ[1], occurrences), dtype=float)
+        values = np.fromiter(map(lambda occ: occ[2], occurrences), dtype=float)
+
+        return (stats.pearsonr(icu, values)[0], covered_transactions)
+
 
     '''
     TARGETS = ['ALBUMIN_MEAN', 'BE_ARTERIAL_MEAN', 'BE_VENOUS_MEAN', 'BIC_ARTERIAL_MEAN', 'BIC_VENOUS_MEAN', 'BILLIRUBIN_MEAN', 'BLAST_MEAN',
@@ -137,6 +160,36 @@ class Runwithinterface:
 
                     # aggiungo nei results.csv
                     ifile.write(','.join(map(str, [target, occ_t, pearson_t, max_card_itemset, len(pearsons), run_usr])) + '\n')
+
+                    # ===== LA PARTE PER SALVARE I JSON PER OGNI FEATURES
+                    pearson_valid = list()
+                    pearson_unvalid = list()
+
+                    # parsing dei risultati e del runtime
+                    for ans in results[0:-4]:
+                        (pearson, covered_transactions) = self.compute_pearson_and_covered_transactions(ans)
+                        if abs(pearson) >= pearson_t:
+                            doc = self.parse_ans_JSON(ans, pearson, covered_transactions)
+                            pearson_valid.append(doc)
+                        else:
+                            pearson_unvalid.append(pearson)
+                    # parsing del tempo
+                    (_, usr_time, sys_time) = self.parse_time(results[-3:])
+
+                    # debug
+                    print(f'Results for occ {occ_t}, pearson {pearson_t}, max card itemset {max_card_itemset}: len(ans) {len(pearson_valid)} time (usr) {usr_time} time (sys) {sys_time}')
+
+                    # aggiungo nei results.csv
+                    ifile.write(','.join(map(str,
+                                             [target, occ_t, pearson_t, max_card_itemset, len(pearson_valid), usr_time,
+                                              sys_time])) + '\n')
+
+                    # salvo in un file i risultati
+                    with open(f'results/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json',
+                              'w') as ofile:
+                        json.dump(pearson_valid, ofile)
+
+                    # ===== LA PARTE PER SALVARE I JSON PER OGNI FEATURES
 
 
     def update_threshold(self, occ_t, pearson_t=0.25, max_card_itemset=5):
