@@ -1,5 +1,3 @@
-# img_viewer.py
-
 import glob
 import re
 from copy import deepcopy
@@ -21,9 +19,6 @@ from table import Table
 from ASP_utilities import *
 from regression import *
 
-option2 = {'resolution': 1, 'pad': (0, 0), 'disable_number_display': True,
-           'enable_events': True}
-
 def inn(filenamepath):
     #df = pd.read_csv(filename, sep=';')
     df = pd.read_excel(filenamepath)
@@ -33,30 +28,28 @@ def inn(filenamepath):
     global table_headers
     table_headers = df.columns.values.tolist()
 
+menu_def = [['&File', ['&Open     Ctrl-O', '&Save       Ctrl-S', '&Properties', 'E&xit']], ['&Parameter', ['Occurrences', ['Occ 1', 'Occ 2', 'Occ 3', 'Occ 4', 'Occ 5', 'Occ 6', 'Occ 7', 'Occ 8', 'Occ 9', 'Occ 10'], 'Utility', ['Util 1', 'Util 2', 'Util 3', 'Util 4', 'Util 5', 'Util 6', 'Util 7', 'Util 8', 'Util 9', 'Util 10'], 'Max Cardinality', ['MaxC 1', 'MaxC 2', 'MaxC 3', 'MaxC 4', 'MaxC 5', 'MaxC 6', 'MaxC 7', 'MaxC 8', 'MaxC 9', 'MaxC 10'], 'Undo']], ['&Help', ['&About...']], ]
 STOP_ICO = b'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAQtQTFRFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////4XQRTgAAAFh0Uk5TAAQtd6/N2t14AzybxKJvSSwfIKQcjcZ+Kxo3uyi5NEjIcQjHRThdAmJyoT3FKSo7mn2AlS7DL5GYkK1rbWxqpnCoSqOWl9Zpp24kgwmLuGdEQTOEinY6qaaGHfcAAAABYktHRFjttcSOAAAACXBIWXMAAHYcAAB2HAGnwnjqAAABVklEQVQ4y4VT20KCUBBc7nFRyQQFzAQrhRDLsjRNy6yszK7m//9JBBxFVJgXzrK77DJnBgABwwmSohmGpsgdHIMoWI4XUumMuJvFM+k9gefY1XxOkvOFRRtWyMuSEs6rGl9c7Sjy+6VldFDWjehMQ68covNR+bi6thRUa7IazNfMDXm3wtRy3lPiDdgIw5L+O0/sOmyBYzdcAk7PYCua51W4aIlBdHnVDtBxgldiCwcihTjrXHd7Hm6EPmJsoAN5i77X7q2fiDughnEFQwpoMa4Ap4HJxhVkmeQCGk8Ykbhk4m8S90hIHXnkE/nw+ISIGushqp3us89kr/8Sojr2sl7dywIu4bpjBDOx3jypKdNtkpsG0i9VaptE+24vhP8hm5No3jDtz2WkalZk07o1/QrHrvWaIeuJ3/KPstrBNkbCYOabdzYWRr9sdKZrf33u23+uh+z/B2VfLrahBr0nAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDE4LTA0LTA0VDE3OjM3OjU2KzAyOjAw5BhRKQAAACV0RVh0ZGF0ZTptb2RpZnkAMjAxOC0wNC0wNFQxNzozNzo1NiswMjowMJVF6ZUAAABGdEVYdHNvZnR3YXJlAEltYWdlTWFnaWNrIDYuNy44LTkgMjAxNi0wNi0xNiBRMTYgaHR0cDovL3d3dy5pbWFnZW1hZ2ljay5vcmfmvzS2AAAAGHRFWHRUaHVtYjo6RG9jdW1lbnQ6OlBhZ2VzADGn/7svAAAAGHRFWHRUaHVtYjo6SW1hZ2U6OmhlaWdodAA1MTLA0FBRAAAAF3RFWHRUaHVtYjo6SW1hZ2U6OldpZHRoADUxMhx8A9wAAAAZdEVYdFRodW1iOjpNaW1ldHlwZQBpbWFnZS9wbmc/slZOAAAAF3RFWHRUaHVtYjo6TVRpbWUAMTUyMjg1NjI3NkpG4K8AAAATdEVYdFRodW1iOjpTaXplADEzLjdLQkKJLoCuAAAAR3RFWHRUaHVtYjo6VVJJAGZpbGU6Ly8uL3VwbG9hZHMvNTYvOWhSY0tsdC8xNDE2L211c2ljLXN0b3AtYnV0dG9uXzk4MTgzLnBuZyjEQuYAAAAASUVORK5CYII='
 RUN_ICO = b'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'
 rwi=Runwithinterface()
 preprocess=Preprocessing()
 thr=None
 tablein=Table()
+table_input_pattern_prediction = Table()
 tablein.create_data()
 tablein.create_table()
+df_training_dataset=None
+df_training_dataset_header_list=None
 occurrences = 5
 utility = 5
 max_card = 5
-clustering_list = [0] #[]
-feature_list = [154, 149]#[13, 14] #[]
-item_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] #[]
-target_list = [230] #[]
-table_input_pattern_prediction = Table()
 
-menu_def = [['&File', ['&Open     Ctrl-O', '&Save       Ctrl-S', '&Properties', 'E&xit']],
-            ['&Parameter', ['Occurrences', ['Occ 1', 'Occ 2', 'Occ 3', 'Occ 4', 'Occ 5', 'Occ 6', 'Occ 7', 'Occ 8', 'Occ 9', 'Occ 10'],
-                            'Utility', ['Util 1', 'Util 2', 'Util 3', 'Util 4', 'Util 5', 'Util 6', 'Util 7', 'Util 8', 'Util 9', 'Util 10'],
-                            'Max Cardinality', ['MaxC 1', 'MaxC 2', 'MaxC 3', 'MaxC 4', 'MaxC 5', 'MaxC 6', 'MaxC 7', 'MaxC 8', 'MaxC 9', 'MaxC 10'], 'Undo']],
-            #['!Disabled', ['Special', 'Normal', ['Normal1', 'Normal2'], 'Undo']],
-            #['&Toolbar', ['---', 'Command &1::Command_Key', 'Command &2', '---', 'Command &3', 'Command &4']],
-            ['&Help', ['&About...']], ]
+# TODO: sistemare con valori veri
+clustering_list = [0]
+feature_list = [13, 14]
+item_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+target_list = [230]
+
 
 def initializeThread(create=False):
     if create==True:
@@ -64,8 +57,10 @@ def initializeThread(create=False):
         return thr
 
 def show_training_dataset(window, filename):
+    ''' mostra il training dataset da input (caricata da file) per selezionare le categorie: clustering, feature etc... '''
     if Path(filename).is_file():
         try:
+            # TODO: decommentare le seguenti linee
             # print("filename {%s}", filename)
             # create the EDB facts for the program to execute
             # preprocess.input(filename)
@@ -75,7 +70,29 @@ def show_training_dataset(window, filename):
                 for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
                     widget.destroy()
 
-            df = pd.read_excel(filename)
+            global df_training_dataset, df_training_dataset_header_list
+            df_training_dataset = pd.read_excel(filename)
+            df_training_dataset_header_list = df_training_dataset.columns.tolist()
+            window.extend_layout(window['TRAINING_DATASET_COL'], [[
+                sg.Frame('Training Dataset', key='FRAME_TRAINING', background_color='dark blue', pad=(0, 5), #size=frameSize,
+                          layout=[[sg.Table(values=df_training_dataset.values.tolist()[:30],
+                            headings=df_training_dataset_header_list,
+                            pad=(2,2),
+                            max_col_width=25,
+                            col_widths=25,
+                            row_height=20,
+                            border_width=5,
+                            expand_y=True,
+                            expand_x=False,
+                            auto_size_columns=True,
+                            alternating_row_color="green",
+                            justification="right",
+                            num_rows=min(df_training_dataset[df_training_dataset.columns[0]].count(), 20),
+                            key="TABLE_TRAINING_DATASET",
+                            enable_click_events=True),],], )
+            ]])
+
+            '''
             window.extend_layout(window['TRAINING_DATASET_COL'], [[sg.Table(values=df.values.tolist()[:100],
                             headings=df.columns.tolist(),
                             pad=(2,2),
@@ -83,45 +100,25 @@ def show_training_dataset(window, filename):
                             border_width=5,
                             expand_y=True,
                             auto_size_columns=True,
+                            alternating_row_color="green",
                             justification="right",
                             num_rows=min(df[df.columns[0]].count(), 20),
                             key="TABLE_TRAINING_DATASET",
                             enable_click_events=True
             )]])
+            '''
 
-            #SETTING OF TABLE
+            # TODO: aggiungere la SETTING OF TABLE
             #setting_table_prediction(window, tablein)
 
-            '''
-            =====
-            tablein.create_data(headers=len(df.columns), cols=len(df.columns), rows=20,
-                                size=df[df.columns[0]].count(), inputdf=df.to_numpy(),
-                                headers_list=df.columns)  # size = df[df.columns[0]].count()
-            tablein.create_table()
-
-            # widget = window['TABLE'].Widget
-            # widget.master.destroy()
-
-            # ackground_color = 'black', pad = (0, 0), size = (1200, 80), key = 'TABLE_2', scrollable = True
-            newTable = sg.Column(tablein.table, background_color='black', pad=(0, 0), size=(1200, 80), key='TABLE',
-                                 scrollable=True)
-            # setting_table_prediction
-            window.extend_layout(window['TABLE_COL'], [[newTable, ]])
-            setting_table_prediction(window, tablein)
-
-            window.refresh()
-            window['TABLE_COL'].contents_changed()
-            window['PREDICTION_TABLE'].contents_changed()
-            '''
             window.refresh()
 
         except Exception as e:
             print("", end="")
             print("FILE in INPUT NOT FOUND with error e: ", e)
 
-
-
 def show_patterns(window, tablein, feature_list):
+    ''' mostra i pattern dopo la training dataset in input '''
     data=[]
     data.append(['PATTERN', 'FEATURE', 'PEARSON'])
 
@@ -180,6 +177,7 @@ def show_patterns(window, tablein, feature_list):
 
 
 def setting_table_prediction(window, tablein):
+    ''' serve per mostrare la tabella formata da elementi "INPUT" per effettuare la predizione '''
     msg.info('setting_table_prediction')
     #table_input_pattern_prediction = Table()
     #global table_input_pattern_prediction
@@ -196,6 +194,7 @@ def setting_table_prediction(window, tablein):
     window['PREDICTION_RESULT'].update(visible=True)
 
 def extract_input_pattern_prediction():
+    ''' estrae il pattern in modo formattato per essere utiilizzato nel modulo della regressione '''
     msg.info('EXTRACT INPUT PATTERN PREDICTION')
     input_pattern=[]
     for rr in range(0, 2):
@@ -206,147 +205,55 @@ def extract_input_pattern_prediction():
 
     return input_pattern
 
-
-def plot_draw(history):
-    names = ['group_a', 'group_b', 'group_c']
-    values = [1, 10, 100]
-
-    plt.figure(figsize=(9, 3))
-
-    plt.subplot(131)
-    plt.bar(names, values)
-    plt.subplot(132)
-    plt.scatter(names, values)
-    plt.subplot(133)
-    plt.plot(names, values)
-    plt.suptitle('Categorical Plotting')
-    plt.show()
-
-
 # ===================================
 
-list_column_bar=[[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
-# First the window layout in 2 columns
-#list_column = [
-    #[sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
-    [
-        sg.Text(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green", key="text_thresholds"),
+list_column_bar=[
+    [sg.MenubarCustom(menu_def, pad=(0,0), k='-CUST MENUBAR-')],
+    [sg.Text(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green", key="text_thresholds"),],
+    [sg.Radio('Clustering\n (red)', "radio", default=True, key='-clustering-'), #RED
+    sg.Radio('Feature\n (green)', "radio", default=False, key='-feature-'), #GREEN
+    sg.Radio('Item\n (yellow)', "radio", default=False, key='-item-'),  # YELLOW
+    sg.Radio('Target\n (blue)', "radio", default=False, key='-target-'), #BLUE
+    sg.Radio('CLEAR\n selection\n ', "radio", default=False, key='-clear_selection-') #CLEAR
     ],
-    [
-        sg.Radio('Clustering\n (red)', "radio", default=True, key='-clustering-'), #RED
-        sg.Radio('Feature\n (green)', "radio", default=False, key='-feature-'), #GREEN
-        sg.Radio('Item\n (yellow)', "radio", default=False, key='-item-'),  # YELLOW
-        sg.Radio('Target\n (blue)', "radio", default=False, key='-target-'), #BLUE
-        sg.Radio('CLEAR\n selection\n ', "radio", default=False, key='-clear_selection-') #CLEAR
-    ],
-    [
-        #TABLE
-        #sg.Column([[sg.Column(tablein.table, background_color='black', pad=(0, 0), key='TABLE', scrollable=True)]], key='TABLE_COL')
-        # sg.Table(table_data, headings=table_headers, display_row_numbers=True, auto_size_columns=False, num_rows=min(25, len(data_example)), key="-RECORDSTABLE-"),
-        sg.Column([[]], key='TRAINING_DATASET_COL', expand_y=True)
-    ],
-    [
-        sg.HSeparator(pad=(50, 2))
-    ],
-    [
-        sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-",
-                   button_color=None),
-        sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM",
-                   key="-STOP-"),
-        # sg.Button(enable_events=True, button_text="\n\n\n\n RUN E-HUPM", key="-P-"),
-        sg.Text('', key="execution_TEST"),
-    ],
-    [
-        sg.Text('PATTERNS', key="text_pattern"),
-        sg.Button(enable_events=True, button_text="SHOW", key="SHOW_PATTERNS")
-    ],
-    [
-        sg.HSeparator(pad=(50, 2)),
-    ],
-    [
-        sg.Column([[]], key='SHOW_PATTERNS_COL', expand_x=True, expand_y=True)
-    ],
-    [
-         sg.HSeparator(pad=(50, 2)),
-    ],
-    [
-        sg.Text('PREDICTION'),
-    ],
-    [
-
-        sg.Column([[]], key='PREDICTION_TABLE', expand_x=True, expand_y=True),
-    ],
-     [
-        sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
-                   button_color=None, visible=False),
-        sg.Text('ICU: FAKE NUMBER', key="PREDICTION_RESULT", visible=False),
-     ],
-]
-
-# For now will only show the name of the file that was chosen
-image_viewer_column = [
-    [sg.Text("Results of Pattern Mining:")],
-    [sg.Text(size=(40, 1), key="-TOUT-")],
-    #[sg.Image(key="-IMAGE-")],
-    #[sg.Button(enable_events=True, button_text="PLOT", key="-PLOT-")],
-    [sg.Canvas(size=(50,50), key='canvas')]
+    [sg.Column([[]], key='TRAINING_DATASET_COL', expand_y=True)],
+    [sg.HSeparator(pad=(50, 2))],
+    [sg.Text("Info ")],
+    [sg.Text(text='CLUSTERING: ', key="clustering_text", text_color='red')],
+    [sg.Text(text='FEATURE: ', key="feature_text", text_color='light green')],
+    [sg.Text(text='ITEM: ', key="item_text", text_color='yellow')],
+    [sg.Text(text='TARGET: ', key="target_text", text_color='blue')],
+    [sg.HSeparator(pad=(50, 2))],
+    [sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-", button_color=None),
+     sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM", key="-STOP-"),
+     sg.Text('', key="execution_TEST"),],
+    [sg.Text('PATTERNS', key="text_pattern"), sg.Button(enable_events=True, button_text="SHOW", key="SHOW_PATTERNS")],
+    [sg.HSeparator(pad=(50, 2)),],
+    [sg.Column([[]], key='SHOW_PATTERNS_COL', expand_x=True, expand_y=True)],
+    [sg.HSeparator(pad=(50, 2)),],
+    [sg.Text('PREDICTION'),],
+    [sg.Column([[]], key='PREDICTION_TABLE', expand_x=True, expand_y=True),],
+    [sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
+                   button_color=None, visible=False), sg.Text('ICU: inserire NUMBER', key="PREDICTION_RESULT", visible=False),],
 ]
 
 # ----- Full layout -----
-layout = [
-    [sg.Column(list_column_bar,  expand_x=True, expand_y=True, scrollable=True)]
-    # 1 list_column_bar,
-    # 2 [sg.Column(list_column,  expand_x=True, expand_y=True,  vertical_scroll_only=True, scrollable=True)]
-
-    #[
-    #sg.Column(list_column, scrollable=True, vertical_scroll_only = False, expand_y=True, expand_x=True),
-    #sg.Column(table_col, expand_y=True, scrollable=True),
-    #sg.Column(other, expand_y=True)
-    #]
-
-    #[
-        #sg.Column(file_list_column, c, element_justification='c', key='COL'),
-        #sg.VSeperator(),
-        #sg.Column(image_viewer_column, expand_x=True, expand_y=True, key='COL2'),
-    #]
-]
-
-window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)", layout,
-               # use_custom_titlebar=True, keep_on_top=True, right_click_menu=sg.MENU_RIGHT_CLICK_EDITME_VER_EXIT,
-                   resizable=True, finalize=True)# size=(1400, 850), )#background_color='#f6f3ee')
-#window['COL'].Widget.configure(borderwidth=5, relief=sg.DEFAULT_FRAME_RELIEF)
-#window['COL2'].Widget.configure(borderwidth=5, relief=sg.DEFAULT_FRAME_RELIEF)
+window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)",
+                    resizable=True,
+                    layout=[[sg.Column(list_column_bar)]],
+                    finalize=True,
+                    keep_on_top=True)
 window.Maximize()
-#sg.theme_background_color('#f6f3ee')
-'''
-# add the plot to the window
-fig = rwi.fig_maker(window)
-fig.tight_layout()
-fig_agg = rwi.draw_figure(window['canvas'].TKCanvas, fig)
-'''
 
 tablein.window=window
-fig_agg = None
 thread_started=False
 while True:
     event, values = window.read()
     initializeThread(False)
 
-    msg.fail("EVETTTT=!?!= \n")
-    msg.info(f"{event} and {values}")
-    msg.info("================")
-
-    #### NUOVI EVENTI
-
-    if event in (sg.WIN_CLOSED, 'Exit'):
-        break
-
-    ###sg.cprint(f'event = {event}', c=(sg.theme_background_color(), sg.theme_text_color()))
-    ###sg.cprint(f'values = {values}', c=(sg.theme_input_text_color(), sg.theme_input_background_color()))
-
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
-        # da cancellare da qui
+        # TODO: da cancellare da qui
         show_training_dataset(window, "../Kaggle_Sirio_Libanes_ICU_Prediction.xlsx")
         '''
         window.disappear()
@@ -358,7 +265,6 @@ while True:
         sg.popup_scrolled(__file__, sg.get_versions(), keep_on_top=True, non_blocking=True)
     elif not isinstance(event, tuple) and event.startswith('Open'):
         filename = sg.popup_get_file('file to open', no_window=True)
-        #print(filename)
         show_training_dataset(window, filename)
 
     elif not isinstance(event, tuple) and event == 'Edit Me':
@@ -379,85 +285,73 @@ while True:
         rwi.update_threshold_interface(max_card_itemset=max_card)
         window['text_thresholds'].update(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green")
 
+    elif event[0:2] ==('TABLE_TRAINING_DATASET','+CLICKED+'):
+        clicked_col = (event[2][1])
 
-    elif event[0:2] == ('TABLE_TRAINING_DATASET', '+CLICKED+'):
-        header_index=event[2][1]
-        print(f"header {header_index}")
-        window['TABLE_TRAINING_DATASET'].Update(row_colors=[[3, 'green']])
-        print(window['TABLE_TRAINING_DATASET'].Widget.column(f'#{header_index+1}', anchor='center'))
-        print(window['TABLE_TRAINING_DATASET'].TKTreeview.item(
-            window['TABLE_TRAINING_DATASET'].TKTreeview.get_children()[0])['values']
-        )
+        if values['-clustering-']:
+            if clicked_col not in clustering_list:
+                clustering_list.append(clicked_col)
+            if clicked_col in feature_list:
+                feature_list.remove(clicked_col)
+            if clicked_col in item_list:
+                item_list.remove(clicked_col)
+            if clicked_col in target_list:
+                target_list.remove(clicked_col)
+            #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
+        elif values['-feature-']:
+            if clicked_col in clustering_list:
+                clustering_list.remove(clicked_col)
+            if clicked_col not in feature_list:
+                feature_list.append(clicked_col)
+            if clicked_col in item_list:
+                item_list.remove(clicked_col)
+            if clicked_col in target_list:
+                target_list.remove(clicked_col)
+            #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
-        '''  
-    #elif event.startswith('header_'):
-        clicked_col = int(event.split("_")[1])
-        if clicked_col>=0:
-            #print("clicked _", clicked_col)
-            #print("event ", event)
-            #print(f"column clicked {tablein.data[0][clicked_col]}")
+        elif values['-item-']:
+            if clicked_col in clustering_list:
+                clustering_list.remove(clicked_col)
+            if clicked_col in feature_list:
+                feature_list.remove(clicked_col)
+            if clicked_col not in item_list:
+                item_list.append(clicked_col)
+            if clicked_col in target_list:
+                target_list.remove(clicked_col)
+            #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
-            if values['-clustering-'] == True:
-                window[f'header_{clicked_col}'].update(background_color='red')
-                if clicked_col not in clustering_list:
-                    clustering_list.append(clicked_col)
-                if clicked_col in feature_list:
-                    feature_list.remove(clicked_col)
-                if clicked_col in item_list:
-                    item_list.remove(clicked_col)
-                if clicked_col in target_list:
-                    target_list.remove(clicked_col)
-                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+        elif values['-target-']:
+            if clicked_col in clustering_list:
+                clustering_list.remove(clicked_col)
+            if clicked_col in feature_list:
+                feature_list.remove(clicked_col)
+            if clicked_col in item_list:
+                item_list.remove(clicked_col)
+            if clicked_col not in target_list:
+                target_list.append(clicked_col)
+            #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
-            elif values['-feature-'] == True:
-                window[f'header_{clicked_col}'].update(background_color='green')
-                if clicked_col in clustering_list:
-                    clustering_list.remove(clicked_col)
-                if clicked_col not in feature_list:
-                    feature_list.append(clicked_col)
-                if clicked_col in item_list:
-                    item_list.remove(clicked_col)
-                if clicked_col in target_list:
-                    target_list.remove(clicked_col)
-                print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+        elif values['-clear_selection-']:
+            if clicked_col in clustering_list:
+                clustering_list.remove(clicked_col)
+            if clicked_col in feature_list:
+                feature_list.remove(clicked_col)
+            if clicked_col in item_list:
+                item_list.remove(clicked_col)
+            if clicked_col in target_list:
+                target_list.remove(clicked_col)
+            #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
-            elif values['-item-'] == True:
-                window[f'header_{clicked_col}'].update(background_color='yellow')
-                if clicked_col in clustering_list:
-                    clustering_list.remove(clicked_col)
-                if clicked_col in feature_list:
-                    feature_list.remove(clicked_col)
-                if clicked_col not in item_list:
-                    item_list.append(clicked_col)
-                if clicked_col in target_list:
-                    target_list.remove(clicked_col)
-                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
-
-            elif values['-target-'] == True:
-                window[f'header_{clicked_col}'].update(background_color='blue')
-                if clicked_col in clustering_list:
-                    clustering_list.remove(clicked_col)
-                if clicked_col in feature_list:
-                    feature_list.remove(clicked_col)
-                if clicked_col in item_list:
-                    item_list.remove(clicked_col)
-                if clicked_col not in target_list:
-                    target_list.append(clicked_col)
-                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
-
-            elif values['-clear_selection-'] == True:
-                window[f'header_{clicked_col}'].update(background_color='white')
-                if clicked_col in clustering_list:
-                    clustering_list.remove(clicked_col)
-                if clicked_col in feature_list:
-                    feature_list.remove(clicked_col)
-                if clicked_col in item_list:
-                    item_list.remove(clicked_col)
-                if clicked_col in target_list:
-                    target_list.remove(clicked_col)
-                #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
-        '''
+        # UPDATES FOR ALL "info" LISTs OF CLUSTING, FEATURE, ITEM, TARGET, and TO CLEAR
+        window['clustering_text'].update(value='CLUSTERING: ' + ', '.join(
+            list(map(lambda x: '('+df_training_dataset_header_list[x]+')', clustering_list))))
+        window['feature_text'].update(value='FEATURE: ' + ', '.join(
+            list(map(lambda x: '(' + df_training_dataset_header_list[x] + ')', feature_list))))
+        window['item_text'].update(value='ITEM: ' + ', '.join(
+            list(map(lambda x: '('+df_training_dataset_header_list[x]+')', item_list))))
+        window['target_text'].update(value='TARGET: ' + ', '.join(
+            list(map(lambda x: '('+df_training_dataset_header_list[x]+')', target_list))))
 
     elif not isinstance(event, tuple) and event.startswith('prediction_'):
         bleh = window[event].get()
@@ -465,11 +359,10 @@ while True:
         #window[event].update(value=teh)
         print(bleh)
 
-    #### FINE NUOVI EVENTI
-
     if not isinstance(event, tuple) and event == '-START_PREDICTION-':
+        # TODO: REGRESSIONE (la parte di codice)
         msg.info("start prediction regression MODEL")
-        #regression_model(INPUT_PATTERN)
+        # regression_model(INPUT_PATTERN)
 
         input_pattern = extract_input_pattern_prediction()
         #msg.good("print input_pattern")
@@ -486,7 +379,6 @@ while True:
 
     if not isinstance(event, tuple) and event=="-predictionTargetOK-":
         print(values['predictionTarget'])
-
 
     if not isinstance(event, tuple) and event == "Exit" or event == sg.WIN_CLOSED:
         break
@@ -509,39 +401,16 @@ while True:
         # write the program
         write_program(DEFAULT_PROG)
 
-        # DECOMMENTARE per avviare WASP
+        # TODO: DECOMMENTARE per avviare WASP
         thr=initializeThread(True)
         thr.start()
         thread_started=True
 
-    if 1==1:#thread_started and not thr.is_alive():
+    if event in (sg.WIN_CLOSED, 'Exit'):
+        break
+
+    if 1==1:# TODO: decommentare if thread_started and not thr.is_alive():
         thread_started=False
-        #print("thread morto!")
-
-
-
-
-
-
-
-
-    '''
-    if event == '-P-':
-        if thr.is_alive():
-            msg.good("ALIVE\n\n")
-    '''
-
-
-
-
-    '''
-    if event == '-PLOT-':
-        #plot_draw()
-        if fig_agg is not None:
-            rwi.delete_fig_agg(fig_agg)
-        fig = rwi.fig_maker(window)
-        fig_agg = rwi.draw_figure(window['canvas'].TKCanvas, fig)
-    '''
 
 
 window.close()
