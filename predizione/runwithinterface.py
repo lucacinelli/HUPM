@@ -185,7 +185,7 @@ class Runwithinterface:
                                               sys_time])) + '\n')
 
                     # salvo in un file i risultati
-                    with open(f'results/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json',
+                    with open(f'results/json_{occ_t}_{pearson_t}_{max_card_itemset}/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json',
                               'w') as ofile:
                         json.dump(pearson_valid, ofile)
 

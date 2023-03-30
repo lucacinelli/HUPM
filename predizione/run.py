@@ -105,7 +105,7 @@ def start(target):
                 ifile.write(','.join(map(str, [target, occ_t, pearson_t, max_card_itemset, len(pearsons), run_usr])) + '\n')
 
                 # salvo in un file i risultati
-                with open(f'results/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json', 'w') as ofile:
+                with open(f'results/json_{occ_t}_{pearson_t}_{max_card_itemset}/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json', 'w') as ofile:
                     json.dump(pearsons, ofile)
 
                 print("PEARSOMNNNN \n\n")

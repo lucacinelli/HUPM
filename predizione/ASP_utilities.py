@@ -20,7 +20,7 @@ def write_program(prog):
     with open("program.asp", 'w') as f:
         f.write(prog)
 
-def write_edb_fact(tabledata, clustering_list, feature_list, item_list, target_list):
+def write_edb_fact(tabledata, tableheader, clustering_list, feature_list, item_list, target_list):
     ### ONLY FOR NAME COLUMNS
     clustering_list_write, clustering_list_write_2, clustering_list_write_3, clustering_map, clustering_utility_map = set(), list(), dict(), list(), dict()
     feature_map = list()
@@ -28,16 +28,16 @@ def write_edb_fact(tabledata, clustering_list, feature_list, item_list, target_l
     target_map = list()
 
     for c_l in clustering_list:
-        clustering_map.append(tabledata[0][c_l])
+        clustering_map.append(tableheader[c_l])
 
     for f_l in feature_list:
-        feature_map.append(tabledata[0][f_l])
+        feature_map.append(tableheader[f_l])
 
     for i_l in item_list:
-        item_map[i_l] = tabledata[0][i_l]
+        item_map[i_l] = tableheader[i_l]
 
     for t_l in target_list:
-        target_map.append(tabledata[0][t_l])
+        target_map.append(tableheader[t_l])
 
     ### ONLY FOR NAME COLUMNS
 

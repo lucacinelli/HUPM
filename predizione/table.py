@@ -92,12 +92,20 @@ class Table:
                         )
 
                     else:
-                        line.append(
-                            sg.Input(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c',
-                                    text_color='black', background_color=bg,
-                                    key=f"prediction_{x}",
-                                    enable_events=prediction_event)
-                        )
+                        if y==1:
+                            line.append(
+                                sg.Input(self.data[y][x], size=(dimx, dimy), pad=pad, justification='c',
+                                        text_color='black', background_color=bg,
+                                        key=f"prediction_{x}",
+                                        enable_events=prediction_event)
+                            )
+                        if y==2:
+                            line.append(
+                                sg.Input("//", size=(dimx, dimy), pad=pad, justification='c',
+                                         text_color='black', background_color=bg,
+                                         key=f"prediction_{x}",
+                                         enable_events=False)
+                            )
 
             self.table.append(line)
 
