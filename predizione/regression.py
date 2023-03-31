@@ -139,14 +139,14 @@ def regression_model(input_pattern, df, df_header, features, occ, t_pearson, max
         n_trans_no_patterns = 0 #k_sample - len(pred_and_actual_values)
         k_sample=0
         precision = len(list(filter(lambda v: v[1] == v[2], pred_and_actual_values))) / float(
-            len(pred_and_actual_values))
+            len(pred_and_actual_values) if len(pred_and_actual_values)>0 else 1)
         print(pred_and_actual_values, precision)
 
         #data.append((feature_name, occ, t_pearson, maxcard, k_sample, n_trans_no_patterns, precision))
         final_pred=0
         for i in pred_and_actual_values:
             final_pred = final_pred + i[1]
-        final_pred = final_pred/len(pred_and_actual_values)
+        final_pred = final_pred/len(pred_and_actual_values) if len(pred_and_actual_values)>0 else 1
         final_pred = 0.0 if final_pred<=0.5 else 1.0
         data.append((feature_name, occ, t_pearson, maxcard, precision, final_pred))
 

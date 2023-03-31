@@ -193,7 +193,7 @@ def setting_table_prediction(window):
     #table_input_pattern_prediction = Table()
     #global table_input_pattern_prediction
     table_input_pattern_prediction.create_data(headers=len(df_training_dataset_header_list), cols=len(df_training_dataset_header_list), rows=2,
-                  size=2, inputdf=df_training_dataset.values.tolist()[:2], headers_list=df_training_dataset_header_list)
+                  size=2, inputdf=df_training_dataset.values.tolist()[9:11], headers_list=df_training_dataset_header_list)
 
     table_input_pattern_prediction.create_table(dimx=30, dimy=1, header_event=False, prediction_event=True) #, background_color='yellow', background_color_list=background_color_list)
     newTable = sg.Column(table_input_pattern_prediction.table, background_color='black', pad=(0, 0), size=(1440, 40), key='TABLE_2', scrollable=True)
@@ -202,7 +202,7 @@ def setting_table_prediction(window):
     #window['PREDICTION_TABLE'].contents_changed()
 
     window['-START_PREDICTION-'].update(visible=True)
-    window['PREDICTION_RESULT'].update(visible=True)
+    #window['PREDICTION_RESULT'].update(visible=True)
 
 def extract_input_pattern_prediction():
     ''' estrae il pattern in modo formattato per essere utiilizzato nel modulo della regressione '''
@@ -276,7 +276,10 @@ list_column_bar=[
     sg.Radio('CLEAR\n selection\n ', "radio", default=False, key='-clear_selection-'), #CLEAR
     sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-", button_color=None),
     sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM", key="-STOP-"),
-    sg.Text('', key="execution_TEST")],
+    sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-", button_color=None, visible=True),
+    sg.Button(enable_events=True, button_text="SHOW PATTERNS", key="SHOW_PATTERNS"),
+    ],
+    [sg.Text('', key="execution_TEST")],
 
     #### TRAINING SHOWING ####
     [sg.Column([[]], key='TRAINING_DATASET_COL', size=(1440, int(900/3)), scrollable=True)],
@@ -286,13 +289,13 @@ list_column_bar=[
     [sg.Text(text='FEATURE: ', key="feature_text", text_color='light green')],
     [sg.Text(text='ITEM: ', key="item_text", text_color='yellow')],
     [sg.Text(text='TARGET: ', key="target_text", text_color='blue')],
-    [sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
-                button_color=None, visible=True)],
+    #[sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
+    #            button_color=None, visible=True)],
     [sg.HSeparator(pad=(50, 2))],
 
 
     #### PATTERNS SHOWING ####
-    [sg.Text('PATTERNS', key="text_pattern"), sg.Button(enable_events=True, button_text="SHOW", key="SHOW_PATTERNS")],
+    [sg.Text('PATTERNS', key="text_pattern"), ], #sg.Button(enable_events=True, button_text="SHOW", key="SHOW_PATTERNS")],
     [sg.HSeparator(pad=(50, 2)),],
     [sg.Column([[]], key='SHOW_PATTERNS_COL', size=(1440, int(900/3)), scrollable=True)],
     [sg.HSeparator(pad=(50, 2)),],
@@ -300,10 +303,10 @@ list_column_bar=[
     #### PREDICTION SHOWING ####
     [sg.Text('PREDICTION')],
     [sg.Column([[]], key='PREDICTION_TABLE', size=(1440, 80), scrollable=True)],
-    [sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
-                button_color=None, visible=True),
-        sg.Text('ICU: inserire NUMBER', key="PREDICTION_RESULT", visible=True),
-     ],
+    #[sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
+    #            button_color=None, visible=True),
+    #[ sg.Text('ICU: inserire NUMBER', key="PREDICTION_RESULT", visible=True),
+    # ],
     [sg.HSeparator(pad=(50, 2)),],
 
     #### PATTERNS SHOWING ####
@@ -315,7 +318,7 @@ list_column_bar=[
 window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)",
                     #layout=list_column_bar,
                     layout=[[sg.Column(list_column_bar, size=(1440, 900), scrollable=True, vertical_scroll_only=True)]],
-                    #resizable=True,
+                    resizable=True,
                     size=(1440, 900),
                    # finalize=True
                    )
@@ -459,12 +462,14 @@ while True:
         #for ddata_i, ddata in enumerate(data_regression):
         #    table_input_pattern_prediction.table[2][ddata_i].update(value="009")
 
-        window['PREDICTION_RESULT'].update(value='ICU: '+str(data_regression[-1][5]))
+        #window['PREDICTION_RESULT'].update(value='ICU: '+str(data_regression[-1][5]))
+
+
         show_regression(window, feature_list, data_regression)
 
 
-        if not isinstance(event, tuple) and event == 'SHOW_PATTERNS':
-            show_patterns(window, tablein, feature_list)
+    if not isinstance(event, tuple) and event == 'SHOW_PATTERNS':
+        show_patterns(window, tablein, feature_list)
 
     if not isinstance(event, tuple) and event == '-STOP-':
         #rwi.terminate_process()
