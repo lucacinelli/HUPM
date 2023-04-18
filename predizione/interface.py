@@ -47,9 +47,9 @@ max_card = 5
 
 # TODO: sistemare con valori veri
 clustering_list = [0]
-feature_list = [13, 14]
-item_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-target_list = [230]
+feature_list = [71,72] #[13, 14]
+item_list = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] #[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+target_list = [4] #[230]
 
 
 def initializeThread(create=False):
@@ -73,6 +73,8 @@ def show_training_dataset(window, filename):
 
             global df_training_dataset, df_training_dataset_header_list
             df_training_dataset = pd.read_excel(filename)
+            # aggiunta col ID clustering, cioe un id ad ogni riga del file "mortality... " all inizio
+            df_training_dataset.insert(loc=0, column='ID', value=df_training_dataset.index + 0)
             df_training_dataset_header_list = df_training_dataset.columns.tolist()
             window.extend_layout(window['TRAINING_DATASET_COL'], [[
                 sg.Frame('Training Dataset', key='FRAME_TRAINING', background_color='dark blue', pad=(0, 5),
@@ -115,6 +117,7 @@ def show_training_dataset(window, filename):
             window.refresh()
             window['TRAINING_DATASET_COL'].contents_changed()
 
+            # TODO: decommentare la seguente funzione per richiamare la parte grafica di PREDIZIONE
             setting_table_prediction(window)
 
         except Exception as e:
@@ -341,7 +344,7 @@ while True:
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
         # TODO: da cancellare da qui perchè non deve essere about a caricare il XLSX
-        show_training_dataset(window, "../Kaggle_Sirio_Libanes_ICU_Prediction.xlsx")
+        show_training_dataset(window, "../Mortality_incidence_sociodemographic_and_clinical_data_in_COVID19_patients.xlsx")
         '''
         window.disappear()
         sg.popup('About this program', 'Simulated Menubar to accompany a simulated Titlebar',
