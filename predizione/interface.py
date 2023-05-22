@@ -69,6 +69,7 @@ def show_training_dataset(window, filename):
 
             if "TABLE_TRAINING_DATASET" in window.AllKeysDict:
                 for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
+                    print(widget)
                     widget.destroy()
 
             global df_training_dataset, df_training_dataset_header_list
@@ -76,6 +77,7 @@ def show_training_dataset(window, filename):
             # aggiunta col ID clustering, cioe un id ad ogni riga del file "mortality... " all inizio
             df_training_dataset.insert(loc=0, column='ID', value=df_training_dataset.index + 0)
             df_training_dataset_header_list = df_training_dataset.columns.tolist()
+            #window['TRAINING_DATASET_COL'].update(visible = True)
             window.extend_layout(window['TRAINING_DATASET_COL'], [[
                 sg.Frame('Training Dataset', key='FRAME_TRAINING', background_color='dark blue', pad=(0, 5),
                           layout=[[sg.Table(values=df_training_dataset.values.tolist()[:30],
@@ -93,6 +95,7 @@ def show_training_dataset(window, filename):
                             num_rows=min(df_training_dataset[df_training_dataset.columns[0]].count(), 20),
                             key="TABLE_TRAINING_DATASET",
                             enable_click_events=True,
+                            #vertical_scroll_only=False,
                             size=(wwindow, hwindow/4))
                             ]]
                          )
@@ -118,7 +121,7 @@ def show_training_dataset(window, filename):
             window['TRAINING_DATASET_COL'].contents_changed()
 
             # TODO: decommentare la seguente funzione per richiamare la parte grafica di PREDIZIONE
-            setting_table_prediction(window)
+            #setting_table_prediction(window)
 
         except Exception as e:
             print("", end="")
@@ -149,6 +152,7 @@ def show_patterns(window, tablein, feature_list):
 
 
     if "TABLE_SHOW_PATTERNS" in window.AllKeysDict:
+        print("TORRRIRI")
         for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
             widget.destroy()
 
@@ -266,42 +270,48 @@ def show_regression(window, feature_list, result_regression):
 
 
 # ===================================
-
+sg.set_options(ttk_theme="aqua") # https://wiki.tcl-lang.org/page/List+of+ttk+Themes
+sg.change_look_and_feel('Material1')
 list_column_bar=[
     #### MENU ####
-    [sg.MenubarCustom(menu_def, k='-CUST MENUBAR-')],
+    [sg.MenubarCustom(menu_def, bar_background_color=None, k='-CUST MENUBAR-')],
     #### TRAINING Options ####
     [sg.Text(f'TRAINING with {occurrences} OCCURRENCES, {utility} UTILITY, {max_card} MAX CARDINALITY', background_color="green", key="text_thresholds"),],
-    [sg.Radio('Clustering\n (red)', "radio", default=True, key='-clustering-'), #RED
-    sg.Radio('Feature\n (green)', "radio", default=False, key='-feature-'), #GREEN
+    #[sg.Radio('Clustering\n (red)', "radio", default=True, key='-clustering-'), #RED
+    [sg.Radio('Feature\n (green)', "radio", default=True, key='-feature-'), #GREEN
     sg.Radio('Item\n (yellow)', "radio", default=False, key='-item-'),  # YELLOW
     sg.Radio('Target\n (blue)', "radio", default=False, key='-target-'), #BLUE
     sg.Radio('CLEAR\n selection\n ', "radio", default=False, key='-clear_selection-'), #CLEAR
     sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-", button_color=None),
     sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM", key="-STOP-"),
-    sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-", button_color=None, visible=True),
+    sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-", button_color=None, visible=False),
     sg.Button(enable_events=True, button_text="SHOW PATTERNS", key="SHOW_PATTERNS"),
     ],
     [sg.Text('', key="execution_TEST")],
 
     #### TRAINING SHOWING ####
-    [sg.Column([[]], key='TRAINING_DATASET_COL', size=(1440, int(900/3)), scrollable=True)],
+    [sg.Column([[]], key='TRAINING_DATASET_COL', size=(500, int(900/3)), scrollable=True),
+     sg.VSeparator(),
+     sg.Column([[]], key='SHOW_PATTERNS_COL', size=(500, int(900/3)), scrollable=True)],
     [sg.HSeparator(pad=(50, 2))],
     [sg.Text("Info ")],
-    [sg.Text(text='CLUSTERING: ', key="clustering_text", text_color='red')],
-    [sg.Text(text='FEATURE: ', key="feature_text", text_color='light green')],
+    #[sg.Text(text='CLUSTERING: ', key="clustering_text", text_color='red')],
+    [sg.Text(text='FEATURE: ', key="feature_text", text_color='light green', relief="solid")],
     [sg.Text(text='ITEM: ', key="item_text", text_color='yellow')],
     [sg.Text(text='TARGET: ', key="target_text", text_color='blue')],
     #[sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
     #            button_color=None, visible=True)],
     [sg.HSeparator(pad=(50, 2))],
+]
 
-
+'''
     #### PATTERNS SHOWING ####
     [sg.Text('PATTERNS', key="text_pattern"), ], #sg.Button(enable_events=True, button_text="SHOW", key="SHOW_PATTERNS")],
     [sg.HSeparator(pad=(50, 2)),],
     [sg.Column([[]], key='SHOW_PATTERNS_COL', size=(1440, int(900/3)), scrollable=True)],
     [sg.HSeparator(pad=(50, 2)),],
+
+
 
     #### PREDICTION SHOWING ####
     [sg.Text('PREDICTION')],
@@ -311,20 +321,28 @@ list_column_bar=[
     #[ sg.Text('ICU: inserire NUMBER', key="PREDICTION_RESULT", visible=True),
     # ],
     [sg.HSeparator(pad=(50, 2)),],
-
+    
     #### PATTERNS SHOWING ####
     [sg.Column([[]], key='SHOW_REGRESSION_COL', size=(1440, 80), scrollable=True)],
     [sg.HSeparator(pad=(50, 2)), ],
+
 ]
+'''
 
 # ----- Full layout -----
+
 window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)",
                     #layout=list_column_bar,
-                    layout=[[sg.Column(list_column_bar, size=(1440, 900), scrollable=True, vertical_scroll_only=True)]],
+                    layout=[[sg.Column(list_column_bar, size=(1100, 700))]],
                     resizable=True,
-                    size=(1440, 900),
+                    size=(1100, 700),
+                    alpha_channel=0.99,
+                    #transparent_color="white",
+                    margins=(30, 0),
+
                    # finalize=True
                    )
+
 
 global wwindow, hwindow
 wwindow= window.get_screen_dimensions()[0] #window.TKroot.winfo_screenwidth()
@@ -380,6 +398,7 @@ while True:
     elif event[0:2] ==('TABLE_TRAINING_DATASET','+CLICKED+'):
         clicked_col = (event[2][1])
 
+        '''
         if values['-clustering-']:
             if clicked_col not in clustering_list:
                 clustering_list.append(clicked_col)
@@ -390,10 +409,11 @@ while True:
             if clicked_col in target_list:
                 target_list.remove(clicked_col)
             #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
+        '''
 
-        elif values['-feature-']:
-            if clicked_col in clustering_list:
-                clustering_list.remove(clicked_col)
+        if values['-feature-']:
+            #if clicked_col in clustering_list:
+            #    clustering_list.remove(clicked_col)
             if clicked_col not in feature_list:
                 feature_list.append(clicked_col)
             if clicked_col in item_list:
@@ -403,8 +423,8 @@ while True:
             #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
         elif values['-item-']:
-            if clicked_col in clustering_list:
-                clustering_list.remove(clicked_col)
+            #if clicked_col in clustering_list:
+            #    clustering_list.remove(clicked_col)
             if clicked_col in feature_list:
                 feature_list.remove(clicked_col)
             if clicked_col not in item_list:
@@ -414,8 +434,8 @@ while True:
             #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
         elif values['-target-']:
-            if clicked_col in clustering_list:
-                clustering_list.remove(clicked_col)
+            #if clicked_col in clustering_list:
+            #    clustering_list.remove(clicked_col)
             if clicked_col in feature_list:
                 feature_list.remove(clicked_col)
             if clicked_col in item_list:
@@ -425,8 +445,8 @@ while True:
             #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
         elif values['-clear_selection-']:
-            if clicked_col in clustering_list:
-                clustering_list.remove(clicked_col)
+            #if clicked_col in clustering_list:
+            #    clustering_list.remove(clicked_col)
             if clicked_col in feature_list:
                 feature_list.remove(clicked_col)
             if clicked_col in item_list:
@@ -436,8 +456,8 @@ while True:
             #print(f'C {clustering_list}\n F {feature_list}\n I {item_list} T {target_list}\n')
 
         # UPDATES FOR ALL "info" LISTs OF CLUSTING, FEATURE, ITEM, TARGET, and TO CLEAR
-        window['clustering_text'].update(value='CLUSTERING: ' + ', '.join(
-            list(map(lambda x: '('+df_training_dataset_header_list[x]+')', clustering_list))))
+        #window['clustering_text'].update(value='CLUSTERING: ' + ', '.join(
+        #    list(map(lambda x: '('+df_training_dataset_header_list[x]+')', clustering_list))))
         window['feature_text'].update(value='FEATURE: ' + ', '.join(
             list(map(lambda x: '(' + df_training_dataset_header_list[x] + ')', feature_list))))
         window['item_text'].update(value='ITEM: ' + ', '.join(
@@ -445,7 +465,7 @@ while True:
         window['target_text'].update(value='TARGET: ' + ', '.join(
             list(map(lambda x: '('+df_training_dataset_header_list[x]+')', target_list))))
 
-        #setting_table_prediction(window) #TODO sistemareche si aggiorna in automatico
+        #setting_table_prediction(window) #TODO sistemare che si aggiorna in automatico
 
     elif not isinstance(event, tuple) and event.startswith('prediction_'):
         bleh = window[event].get()
@@ -473,11 +493,6 @@ while True:
 
     if not isinstance(event, tuple) and event == 'SHOW_PATTERNS':
         show_patterns(window, tablein, feature_list)
-
-    if not isinstance(event, tuple) and event == '-STOP-':
-        #rwi.terminate_process()
-        window['execution_TEST'].update('\nExecution TERMINATED!\n')
-        msg.info("STOP process!")
 
     if not isinstance(event, tuple) and event=="-predictionTargetOK-":
         print(values['predictionTarget'])
@@ -511,11 +526,27 @@ while True:
         thr.start()
         thread_started=True
 
+
+    if not isinstance(event, tuple) and event == '-STOP-':
+        #rwi.terminate_process()
+        window['execution_TEST'].update('\nExecution TERMINATED!\n')
+        msg.info("STOP process!")
+        thread_started=False
+
+
     if event in (sg.WIN_CLOSED, 'Exit'):
         break
 
-    if 1==1:# TODO: decommentare if thread_started and not thr.is_alive():
+    #if 1==1:# TODO: decommentare if thread_started and not thr.is_alive():
+    #if thread_started and thr.is_alive():
+    #    thread_started=False
+
+    if not rwi.get_execute():
         thread_started=False
 
+    if not thread_started and thr is not None:
+        window['execution_TEST'].update('\nExecution TERMINATED!\n')
+        msg.info("STOP process!")
+        
 
 window.close()

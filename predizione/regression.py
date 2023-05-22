@@ -130,6 +130,7 @@ def regression_model(input_pattern, df, df_header, features, occ, t_pearson, max
             f_norm = lambda v: 0.0 if v <= 0.5 else 1.0
 
             if all_pred:
+                #TODO: formula
                 final_pred = next(map(f_norm, sum(map(lambda x: x[0][0] * x[0][1] * x[0][2], all_pred)) / sum(
                     map(lambda x: x[1][0] * x[1][1], all_pred))))
                 pred_and_actual_values.append(

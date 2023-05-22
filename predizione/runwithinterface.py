@@ -35,6 +35,9 @@ class Runwithinterface:
                    'BLOODPRESSURE_SISTOLIC_MEAN', 'HEART_RATE_MEAN',
                    'RESPIRATORY_RATE_MEAN', 'TEMPERATURE_MEAN', 'OXYGEN_SATURATION_MEAN']
 
+    def get_execute(self):
+        return self.execute
+
     def shellizr(self, arg, terminate=False):
         """Launches a command in a shell, captures stdout and stderr in out."""
         global p
@@ -262,6 +265,8 @@ class Runwithinterface:
                     self.single_run(target)
                 else:
                     break
+            self.set_execute(e=False)
+
 
     def fig_maker(self, window):  # this should be called as a thread, then time.sleep() here would not freeze the GUI
         #names = ['group_a', 'group_b', 'group_c']
