@@ -1,4 +1,5 @@
 import glob
+import json
 import re
 from copy import deepcopy
 import pandas as pd
@@ -12,7 +13,9 @@ import _thread
 import PySimpleGUI as sg
 import os.path
 import numpy as np
+from numpy import *
 import sys
+import operator
 from runwithinterface import Runwithinterface
 from preprocessing import Preprocessing
 from table import Table
@@ -44,6 +47,7 @@ df_training_dataset_header_list=None
 occurrences = 5
 utility = 5
 max_card = 5
+data_show_pattern = []
 
 # TODO: sistemare con valori veri
 clustering_list = [0]
@@ -127,11 +131,40 @@ def show_training_dataset(window, filename):
             print("", end="")
             print("FILE in INPUT NOT FOUND with error e: ", e)
 
+def sort_table(table, cols):
+    """ sort a table by multiple columns
+        table: a list of lists (or tuple of tuples) where each inner list
+               represents a row
+        cols:  a list (or tuple) specifying the column numbers to sort by
+               e.g. (1,0) would sort by column 1, then by column 0
+    """
+    for col in reversed(cols):
+        try:
+            table = sorted(table, key=operator.itemgetter(col), reverse=True)
+        except Exception as e:
+            sg.popup_error('Error in sort_table', 'Exception in sort_table', e)
+    return table
+
 def show_patterns(window, tablein, feature_list):
     ''' mostra i pattern dopo la training dataset in input '''
     data=[]
-    data.append(['PATTERN', 'FEATURE', 'PEARSON'])
+    data.append(['PATTERN', 'FEATURE', 'PEARSON', 'SUPPORT'])
 
+    for feature in feature_list:
+        feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
+        first_insert=1
+        file_pattern=glob.glob("".join([os.getcwd(), f"/results/json_5_0.5_5/{feature_name}*.json"]))[0]
+        with open(file_pattern, 'r') as f:
+            json_data = json.load(f)
+
+            for json_d in json_data:
+                print(json_d)
+                pattern_concatenated = ', '.join([f"({x.split('=')[0]} : {x.split('=')[1]})" for x  in json_d['p']])
+                data.append([pattern_concatenated, feature_name, json_d['pe'], json_d['len_t']])
+
+        #data.append(["==========", "==========", "==========",])
+
+    '''
     for feature in feature_list:
         feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
         first_insert=1
@@ -148,50 +181,54 @@ def show_patterns(window, tablein, feature_list):
                 data.append([pattern_concatenated, feature_name if first_insert==1 else feature_name, pearson])
                 first_insert=first_insert+1
 
-        data.append(["==========", "==========", "==========",])
+        #data.append(["==========", "==========", "==========",])
+        '''
+
+    global data_show_pattern
+    data_show_pattern = data.copy()
 
 
-    if "TABLE_SHOW_PATTERNS" in window.AllKeysDict:
-        print("TORRRIRI")
-        for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
-            widget.destroy()
+    if "SHOW_PATTERNS_COL" in window.AllKeysDict:
+        if 'TABLE_SHOW_PATTERNS' in window.AllKeysDict:
+            window['TABLE_SHOW_PATTERNS'].update(data_show_pattern)
+        else:
+            window.extend_layout(window['SHOW_PATTERNS_COL'], [[
+                        sg.Frame('Patterns identified', key='FRAME_PATTERNS', background_color='dark blue', pad=(0, 5),
+                                    layout=[[sg.Table(values=data[1::],
+                                    headings=data[0],
+                                    pad=(2,2),
+                                    max_col_width=60,
+                                    row_height=15,
+                                    border_width=5,
+                                    #expand_y=True,
+                                    auto_size_columns=True,
+                                    justification='right',
+                                    # alternating_row_color='lightblue',
+                                    num_rows=min(len(data), 20),
+                                    key="TABLE_SHOW_PATTERNS",
+                                    enable_click_events=True,
+                                    size=(wwindow, hwindow/4))
+                                ]]
+                            )
+                        ]])
 
-    window.extend_layout(window['SHOW_PATTERNS_COL'], [[
-                sg.Frame('Patterns identified', key='FRAME_PATTERNS', background_color='dark blue', pad=(0, 5),
-                            layout=[[sg.Table(values=data[1::],
-                            headings=data[0],
-                            pad=(2,2),
-                            max_col_width=60,
-                            row_height=15,
-                            border_width=5,
-                            #expand_y=True,
-                            auto_size_columns=True,
-                            justification='right',
-                            # alternating_row_color='lightblue',
-                            num_rows=min(len(data), 20),
-                            key="TABLE_SHOW_PATTERNS",
-                            size=(wwindow, hwindow/4))
-                        ]]
-                    )
-                ]])
+            #if FFF>1 and FFF<5:
+            #    for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
+            #        print(widget)
+            #        widget.destroy()
+            #window[f'TTT{FFF-1}'].Widget.destroy()
 
-    #if FFF>1 and FFF<5:
-    #    for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
-    #        print(widget)
-    #        widget.destroy()
-    #window[f'TTT{FFF-1}'].Widget.destroy()
-
-    '''
-    t=Table()
-    t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
-                  inputdf=data, headers_list=data[0])
-    t.create_table(dimx=60, dimy=2, header_event=False)
-    newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
-                       scrollable=True, expand_x=True, expand_y=True)
-    window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
-    '''
-    window.refresh()
-    window['SHOW_PATTERNS_COL'].contents_changed()
+            '''
+            t=Table()
+            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
+                          inputdf=data, headers_list=data[0])
+            t.create_table(dimx=60, dimy=2, header_event=False)
+            newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
+                               scrollable=True, expand_x=True, expand_y=True)
+            window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
+            '''
+            window.refresh()
+            window['SHOW_PATTERNS_COL'].contents_changed()
 
 
 def setting_table_prediction(window):
@@ -271,7 +308,8 @@ def show_regression(window, feature_list, result_regression):
 
 # ===================================
 sg.set_options(ttk_theme="aqua") # https://wiki.tcl-lang.org/page/List+of+ttk+Themes
-sg.change_look_and_feel('Material1')
+#TODO: per il tema
+#sg.change_look_and_feel('Material1')
 list_column_bar=[
     #### MENU ####
     [sg.MenubarCustom(menu_def, bar_background_color=None, k='-CUST MENUBAR-')],
@@ -358,6 +396,8 @@ thread_started=False
 while True:
     event, values = window.read()
     initializeThread(False)
+    print(f"EVENT: {event}")
+
 
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
@@ -532,6 +572,15 @@ while True:
         window['execution_TEST'].update('\nExecution TERMINATED!\n')
         msg.info("STOP process!")
         thread_started=False
+
+
+    if isinstance(event, tuple) and event[0] == 'TABLE_SHOW_PATTERNS':
+        # TABLE CLICKED Event has value in format ('-TABLE=', '+CLICKED+', (row,col))
+        if event[2][0] == -1 and event[2][1] != -1:  # Header was clicked and wasn't the "row" column
+            col_num_clicked = event[2][1]
+            new_table = sort_table(data_show_pattern[1:][:], (col_num_clicked, 0))
+            window['TABLE_SHOW_PATTERNS'].update(new_table)
+            data_show_pattern = [data_show_pattern[0]] + new_table
 
 
     if event in (sg.WIN_CLOSED, 'Exit'):
