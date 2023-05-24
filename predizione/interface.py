@@ -1,5 +1,7 @@
 import glob
 import json
+import pyperclip
+import csv
 import re
 from copy import deepcopy
 import pandas as pd
@@ -21,6 +23,7 @@ from preprocessing import Preprocessing
 from table import Table
 from ASP_utilities import *
 from regression import *
+import os
 
 def inn(filenamepath):
     #df = pd.read_csv(filename, sep=';')
@@ -48,6 +51,9 @@ occurrences = 5
 utility = 5
 max_card = 5
 data_show_pattern = []
+sort_show_pattern_col = ['d', 'd', 'd', 'd']
+working_directory = os.getcwd()
+data_input_prediction = []
 
 # TODO: sistemare con valori veri
 clustering_list = [0]
@@ -71,61 +77,66 @@ def show_training_dataset(window, filename):
             # preprocess.input(filename)
             # create the local table to load in the TRAINING phase
 
-            if "TABLE_TRAINING_DATASET" in window.AllKeysDict:
-                for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
-                    print(widget)
-                    widget.destroy()
-
             global df_training_dataset, df_training_dataset_header_list
             df_training_dataset = pd.read_excel(filename)
             # aggiunta col ID clustering, cioe un id ad ogni riga del file "mortality... " all inizio
             df_training_dataset.insert(loc=0, column='ID', value=df_training_dataset.index + 0)
             df_training_dataset_header_list = df_training_dataset.columns.tolist()
-            #window['TRAINING_DATASET_COL'].update(visible = True)
-            window.extend_layout(window['TRAINING_DATASET_COL'], [[
-                sg.Frame('Training Dataset', key='FRAME_TRAINING', background_color='dark blue', pad=(0, 5),
-                          layout=[[sg.Table(values=df_training_dataset.values.tolist()[:30],
-                            headings=df_training_dataset_header_list,
-                            pad=(2,2),
-                            max_col_width=25,
-                            col_widths=25,
-                            row_height=20,
-                            border_width=5,
-                            #expand_x=True,
-                            #expand_y=True,
-                            auto_size_columns=True,
-                            alternating_row_color="green",
-                            justification="right",
-                            num_rows=min(df_training_dataset[df_training_dataset.columns[0]].count(), 20),
-                            key="TABLE_TRAINING_DATASET",
-                            enable_click_events=True,
-                            #vertical_scroll_only=False,
-                            size=(wwindow, hwindow/4))
-                            ]]
-                         )
-            ]])
 
-            '''
-            window.extend_layout(window['TRAINING_DATASET_COL'], [[sg.Table(values=df.values.tolist()[:100],
-                            headings=df.columns.tolist(),
-                            pad=(2,2),
-                            max_col_width=15,
-                            border_width=5,
-                            expand_y=True,
-                            auto_size_columns=True,
-                            alternating_row_color="green",
-                            justification="right",
-                            num_rows=min(df[df.columns[0]].count(), 20),
-                            key="TABLE_TRAINING_DATASET",
-                            enable_click_events=True
-            )]])
-            '''
+            if "TRAINING_DATASET_COL" in window.AllKeysDict:
+                #for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
+                #    print(widget)
+                #    widget.destroy()
 
-            window.refresh()
-            window['TRAINING_DATASET_COL'].contents_changed()
+                if 'TABLE_TRAINING_DATASET' in window.AllKeysDict:
+                    window['TABLE_TRAINING_DATASET'].update(values=df_training_dataset.values.tolist()[:30])
 
-            # TODO: decommentare la seguente funzione per richiamare la parte grafica di PREDIZIONE
-            #setting_table_prediction(window)
+                else:
+                    #window['TRAINING_DATASET_COL'].update(visible = True)
+                    window.extend_layout(window['TRAINING_DATASET_COL'], [[
+                        sg.Frame('Training Dataset', key='FRAME_TRAINING', background_color='dark blue', pad=(0, 5),
+                                  layout=[[sg.Table(values=df_training_dataset.values.tolist()[:30],
+                                    headings=df_training_dataset_header_list,
+                                    pad=(2,2),
+                                    max_col_width=25,
+                                    col_widths=25,
+                                    row_height=20,
+                                    border_width=5,
+                                    #expand_x=True,
+                                    #expand_y=True,
+                                    auto_size_columns=True,
+                                    alternating_row_color="green",
+                                    justification="right",
+                                    num_rows=min(df_training_dataset[df_training_dataset.columns[0]].count(), 20),
+                                    key="TABLE_TRAINING_DATASET",
+                                    enable_click_events=True,
+                                    #vertical_scroll_only=False,
+                                    size=(wwindow, hwindow/4))
+                                    ]]
+                                 )
+                    ]])
+
+                    '''
+                    window.extend_layout(window['TRAINING_DATASET_COL'], [[sg.Table(values=df.values.tolist()[:100],
+                                    headings=df.columns.tolist(),
+                                    pad=(2,2),
+                                    max_col_width=15,
+                                    border_width=5,
+                                    expand_y=True,
+                                    auto_size_columns=True,
+                                    alternating_row_color="green",
+                                    justification="right",
+                                    num_rows=min(df[df.columns[0]].count(), 20),
+                                    key="TABLE_TRAINING_DATASET",
+                                    enable_click_events=True
+                    )]])
+                    '''
+
+                    window.refresh()
+                    window['TRAINING_DATASET_COL'].contents_changed()
+
+                    # TODO: decommentare la seguente funzione per richiamare la parte grafica di PREDIZIONE
+                    #setting_table_prediction(window)
 
         except Exception as e:
             print("", end="")
@@ -140,7 +151,17 @@ def sort_table(table, cols):
     """
     for col in reversed(cols):
         try:
-            table = sorted(table, key=operator.itemgetter(col), reverse=True)
+            global sort_show_pattern_col
+            rev = True
+            if sort_show_pattern_col[col] == 'd': # se decrescente
+                rev = True
+                sort_show_pattern_col[col] = 'c'
+            else:
+                rev = False
+                sort_show_pattern_col[col] = 'd'
+
+            table = sorted(table, key=operator.itemgetter(col), reverse=rev)
+
         except Exception as e:
             sg.popup_error('Error in sort_table', 'Exception in sort_table', e)
     return table
@@ -158,11 +179,18 @@ def show_patterns(window, tablein, feature_list):
             json_data = json.load(f)
 
             for json_d in json_data:
-                print(json_d)
                 pattern_concatenated = ', '.join([f"({x.split('=')[0]} : {x.split('=')[1]})" for x  in json_d['p']])
                 data.append([pattern_concatenated, feature_name, json_d['pe'], json_d['len_t']])
 
         #data.append(["==========", "==========", "==========",])
+
+
+    ### export csv
+    #with open("patterns.csv", 'w') as f:
+    #    writer = csv.writer(f, delimiter=';')
+    #    writer.writerows(data)
+
+    ### export csv
 
     '''
     for feature in feature_list:
@@ -190,7 +218,7 @@ def show_patterns(window, tablein, feature_list):
 
     if "SHOW_PATTERNS_COL" in window.AllKeysDict:
         if 'TABLE_SHOW_PATTERNS' in window.AllKeysDict:
-            window['TABLE_SHOW_PATTERNS'].update(data_show_pattern)
+            window['TABLE_SHOW_PATTERNS'].update(data_show_pattern[1::])
         else:
             window.extend_layout(window['SHOW_PATTERNS_COL'], [[
                         sg.Frame('Patterns identified', key='FRAME_PATTERNS', background_color='dark blue', pad=(0, 5),
@@ -261,7 +289,59 @@ def extract_input_pattern_prediction():
     return input_pattern
 
 
+def show_prediction(window, copy_paste_data, feature_list):
+    data=[]
+    data.append(df_training_dataset_header_list)
+    data.append(copy_paste_data)
 
+    #global data_show_pattern
+    #data_show_pattern = data.copy()
+
+
+    if "SHOW_PREDICTION_COL" in window.AllKeysDict:
+        if 'TABLE_PREDICTION' in window.AllKeysDict:
+            window['TABLE_PREDICTION'].update(data[1::])
+        else:
+            window.extend_layout(window['SHOW_PREDICTION_COL'], [[
+                        sg.Frame('Data to make prediction', key='FRAME_PREDICTION', background_color='dark blue', pad=(0, 5),
+                                    layout=[[sg.Table(values=data[1::],
+                                    headings=data[0],
+                                    pad=(2,2),
+                                    max_col_width=60,
+                                    row_height=15,
+                                    border_width=5,
+                                    #expand_y=True,
+                                    auto_size_columns=True,
+                                    justification='right',
+                                    # alternating_row_color='lightblue',
+                                    num_rows=min(len(data), 20),
+                                    key="TABLE_PREDICTION",
+                                    enable_click_events=True,
+                                    size=(900, 60))
+                                ]]
+                            )
+                        ]])
+
+            #if FFF>1 and FFF<5:
+            #    for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
+            #        print(widget)
+            #        widget.destroy()
+            #window[f'TTT{FFF-1}'].Widget.destroy()
+
+            '''
+            t=Table()
+            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
+                          inputdf=data, headers_list=data[0])
+            t.create_table(dimx=60, dimy=2, header_event=False)
+            newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
+                               scrollable=True, expand_x=True, expand_y=True)
+            window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
+            '''
+            window.refresh()
+            window['SHOW_PREDICTION_COL'].contents_changed()
+
+
+#TODO: da revisionare (penso dacancellare proprio)
 def show_regression(window, feature_list, result_regression):
     ''' mostra i pattern dopo la training dataset in input '''
     features_index=dict()
@@ -340,6 +420,10 @@ list_column_bar=[
     #[sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-",
     #            button_color=None, visible=True)],
     [sg.HSeparator(pad=(50, 2))],
+    [sg.Column([[]], key='SHOW_PREDICTION_COL', size=(800, 80), scrollable=True),
+     sg.Button(enable_events=True, button_text="LOAD", key="LOAD_PATIENT"),
+     sg.Button(enable_events=True, button_text="PRED", key="PREDICTION_CALL"),
+    ],
 ]
 
 '''
@@ -378,9 +462,13 @@ window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)",
                     #transparent_color="white",
                     margins=(30, 0),
 
-                   # finalize=True
+                    finalize=True
                    )
 
+window.bind("<Control-C>", "Control-C")
+window.bind("<Control-c>", "Control-c")
+window.bind("<Control-V>", "Control-V")
+window.bind("<Control-v>", "Control-v")
 
 global wwindow, hwindow
 wwindow= window.get_screen_dimensions()[0] #window.TKroot.winfo_screenwidth()
@@ -397,7 +485,6 @@ while True:
     event, values = window.read()
     initializeThread(False)
     print(f"EVENT: {event}")
-
 
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
@@ -507,35 +594,8 @@ while True:
 
         #setting_table_prediction(window) #TODO sistemare che si aggiorna in automatico
 
-    elif not isinstance(event, tuple) and event.startswith('prediction_'):
-        bleh = window[event].get()
-        #teh = f'{bleh}1'
-        #window[event].update(value=teh)
-        print(bleh)
-
-    if not isinstance(event, tuple) and event == '-START_PREDICTION-':
-        # TODO: REGRESSIONE (la parte di codice)
-        msg.info("start prediction regression MODEL")
-        input_pattern = extract_input_pattern_prediction()
-        data_regression = regression_model(input_pattern, df_training_dataset,
-                         df_training_dataset_header_list, feature_list,
-                         occurrences, 0.5, max_card, target_list)
-
-        #msg.info("start prediction regression MODEL")
-        #for ddata_i, ddata in enumerate(data_regression):
-        #    table_input_pattern_prediction.table[2][ddata_i].update(value="009")
-
-        #window['PREDICTION_RESULT'].update(value='ICU: '+str(data_regression[-1][5]))
-
-
-        show_regression(window, feature_list, data_regression)
-
-
     if not isinstance(event, tuple) and event == 'SHOW_PATTERNS':
         show_patterns(window, tablein, feature_list)
-
-    if not isinstance(event, tuple) and event=="-predictionTargetOK-":
-        print(values['predictionTarget'])
 
     if not isinstance(event, tuple) and event == "Exit" or event == sg.WIN_CLOSED:
         break
@@ -582,6 +642,66 @@ while True:
             window['TABLE_SHOW_PATTERNS'].update(new_table)
             data_show_pattern = [data_show_pattern[0]] + new_table
 
+    if not isinstance(event, tuple) and (event == "Control-C" or event == "Control-c"):
+        items = values['TABLE_TRAINING_DATASET']
+        lst = list(map(lambda x: ''.join(str(df_training_dataset.values.tolist()[x])), items))
+        text = "\n".join(lst)
+        pyperclip.copy(text)
+        print(f"copiato text {text}")
+
+    if not isinstance(event, tuple) and (event == "Control-V" or event == "Control-v"):
+        copy_paste_data = pyperclip.lazy_load_stub_paste()
+        copy_paste_data = copy_paste_data.replace('[', '')
+        copy_paste_data = copy_paste_data.replace(']', '')
+        copy_paste_data = copy_paste_data.split(',')
+        show_prediction(window, copy_paste_data, feature_list)
+
+    if not isinstance(event, tuple) and event == 'LOAD_PATIENT':
+        filename = sg.popup_get_file('file to open', no_window=True)
+        if Path(filename).is_file():
+            try:
+                data_input_prediction = []
+                with open(filename, 'r') as f:
+                    csvreader = csv.reader(f)
+                    for row in csvreader:
+                        print(f'row {row}')
+                        data_input_prediction.append(row)
+
+                #data_input_prediction = (pd.read_csv(filename, delimiter=',')).columns.tolist()
+                print(f'data_input_prediction {data_input_prediction[0]}')
+                show_prediction(window, data_input_prediction[0], feature_list)
+
+            except Exception as e:
+                print("", end="")
+                print("FILE in INPUT NOT FOUND with error e: ", e)
+
+
+    if not isinstance(event, tuple) and event == 'PREDICTION_CALL':
+        msg.info("start prediction regression MODEL")
+
+        #TODO: prevedere il for per più pazienti in input
+        #input_pattern = extract_input_pattern_prediction()
+        data_regression = regression_model(data_input_prediction[0], df_training_dataset,
+                         df_training_dataset_header_list, feature_list,
+                         occurrences, 0.5, max_card, target_list)
+
+        print(data_regression)
+
+        #msg.info("start prediction regression MODEL")
+        #for ddata_i, ddata in enumerate(data_regression):
+        #    table_input_pattern_prediction.table[2][ddata_i].update(value="009")
+
+        #window['PREDICTION_RESULT'].update(value='ICU: '+str(data_regression[-1][5]))
+
+
+        #show_regression(window, feature_list, data_regression)
+
+    #TODO: forse da eliminare????? (non mi ricordo dove utilizzato)
+    if not isinstance(event, tuple) and event.startswith('prediction_'):
+        bleh = window[event].get()
+        #teh = f'{bleh}1'
+        #window[event].update(value=teh)
+        print(bleh)
 
     if event in (sg.WIN_CLOSED, 'Exit'):
         break
