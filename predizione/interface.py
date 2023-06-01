@@ -53,13 +53,38 @@ max_card = 5
 data_show_pattern = []
 sort_show_pattern_col = ['d', 'd', 'd', 'd']
 working_directory = os.getcwd()
-data_input_prediction = []
 
 # TODO: sistemare con valori veri
 clustering_list = [0]
 feature_list = [71,72] #[13, 14]
 item_list = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] #[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 target_list = [4] #[230]
+
+
+def call_automatically(call_aut):
+    if not call_aut:
+        return
+
+    show_training_dataset(window, "../Mortality_incidence_sociodemographic_and_clinical_data_in_COVID19_patients.xlsx")
+    filename = '../input_prova.csv'#sg.popup_get_file('file to open', no_window=True)
+    if Path(filename).is_file():
+        try:
+            global data_input_prediction
+            data_input_prediction = []
+            with open(filename, 'r') as f:
+                csvreader = csv.reader(f)
+                for row in csvreader:
+                    print(f'row {row}')
+                    data_input_prediction.append(row)
+
+            # data_input_prediction = (pd.read_csv(filename, delimiter=',')).columns.tolist()
+            show_prediction(window, data_input_prediction[0], feature_list)
+
+        except Exception as e:
+            print("", end="")
+            print("FILE in INPUT NOT FOUND with error e: ", e)
+
+
 
 
 def initializeThread(create=False):
@@ -481,10 +506,17 @@ print(f"w {wwindow}, h {hwindow}")
 
 tablein.window=window
 thread_started=False
+call_automatically_var = True
 while True:
+    ## TODO: da togliere alla fine di tutto
+    call_automatically(call_automatically_var)
+    call_automatically_var = False
+    ### da togliere
+
     event, values = window.read()
     initializeThread(False)
     print(f"EVENT: {event}")
+
 
     # ------ Process menu choices ------ #
     if not isinstance(event, tuple) and event == 'About...':
@@ -644,22 +676,30 @@ while True:
 
     if not isinstance(event, tuple) and (event == "Control-C" or event == "Control-c"):
         items = values['TABLE_TRAINING_DATASET']
-        lst = list(map(lambda x: ''.join(str(df_training_dataset.values.tolist()[x])), items))
-        text = "\n".join(lst)
+        lst = list(map(lambda x: df_training_dataset.values.tolist()[x], items))[0]
+        text = ""
+        for l in range(0, len(lst)-1):
+            text += str(lst[l])
+            text += ','
+        text += str(lst[-1])
+        print(text)
         pyperclip.copy(text)
         print(f"copiato text {text}")
 
     if not isinstance(event, tuple) and (event == "Control-V" or event == "Control-v"):
         copy_paste_data = pyperclip.lazy_load_stub_paste()
-        copy_paste_data = copy_paste_data.replace('[', '')
-        copy_paste_data = copy_paste_data.replace(']', '')
+        #copy_paste_data = copy_paste_data.replace('[', '')
+        #copy_paste_data = copy_paste_data.replace(']', '')
+        #copy_paste_data = copy_paste_data.split(',')
         copy_paste_data = copy_paste_data.split(',')
+
         show_prediction(window, copy_paste_data, feature_list)
 
     if not isinstance(event, tuple) and event == 'LOAD_PATIENT':
         filename = sg.popup_get_file('file to open', no_window=True)
         if Path(filename).is_file():
             try:
+                global data_input_prediction
                 data_input_prediction = []
                 with open(filename, 'r') as f:
                     csvreader = csv.reader(f)
@@ -668,7 +708,6 @@ while True:
                         data_input_prediction.append(row)
 
                 #data_input_prediction = (pd.read_csv(filename, delimiter=',')).columns.tolist()
-                print(f'data_input_prediction {data_input_prediction[0]}')
                 show_prediction(window, data_input_prediction[0], feature_list)
 
             except Exception as e:
@@ -685,7 +724,7 @@ while True:
                          df_training_dataset_header_list, feature_list,
                          occurrences, 0.5, max_card, target_list)
 
-        print(data_regression)
+        print(f"Result (interface) DATA_REGRESSION {data_regression}")
 
         #msg.info("start prediction regression MODEL")
         #for ddata_i, ddata in enumerate(data_regression):

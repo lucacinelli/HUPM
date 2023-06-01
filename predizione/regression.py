@@ -5,6 +5,7 @@ from wasabi import msg
 import json
 import numpy as np
 import os
+import pickle
 import pandas as pd
 import random
 
@@ -21,7 +22,8 @@ def open_df():
 
 def create_indexes(occ, pearson, maxcard):
     dir_files = f'results/json_{occ}_{pearson}_{maxcard}/'
-    json_files = filter(lambda f: f.endswith('.json'), os.listdir(dir_files))
+    json_files = list(filter(lambda f: f.endswith('.json'), os.listdir(dir_files)))
+    #print(f'json files {list(json_files)}')
 
     targets = {}
     # contiene una lista di elementi (p, target) dove p è un pattern che appare in t e target è il target considerato
@@ -68,12 +70,17 @@ def create_indexes_excel(occ, pearson, maxcard):
 
     return targets, t2p
 
+
 def regression_model(input_pattern, df, df_header, features, occ, t_pearson, maxcard, target_output):
-    data = list()
-    df['TID'] = range(0, len(df))
-    #df = df.dropna()
     msg.info(f"Doing occ = {occ}, pearson = {t_pearson}, maxcard = {maxcard}")
-    targets, t2p = create_indexes(occ, t_pearson, maxcard)
+
+    data = list()
+    patterns_res_features, t2p = create_indexes(occ, t_pearson, maxcard)
+    # COMMENTI STRUTTURA
+    # patterns_res_features => lista dei pattern per ciascun features (banalmente i file json  così come sono)
+    # t2p => dict in cui ad ogni transazione sono salvati i pattern trovati per ciascun features
+    # es. Transaction=1 esiste una lista di pattern (p1, feature1), (p2, feature1), (p3, feature99)
+
     pred_and_actual_values = list()
     features_index=dict()
     for f in features:
@@ -83,13 +90,131 @@ def regression_model(input_pattern, df, df_header, features, occ, t_pearson, max
 
     #//////////////////////////////// REGRESSION PREDICTION ////////////////////////////////////
 
-    # per ciascuna feature trovo le transazioni con quel valore e vado alla ricerca di patterns
+    # PASSO 1) per ciascuna feature trovo le transazioni con quel valore e vado alla ricerca di patterns
     # per calcolare la pearson
 
-    # 1) identify the transactions with have a values equal in the field column of FEATURE
+    # 1) identificare le transazioni che hanno un valore uguale al campo nella colonna FEATURE
+    transaction_index = dict()
+    for f_id, f_name in features_index.items():
+        transaction_index[f_name] = list(df.loc[df[f_name].astype(str).str.contains(input_pattern[f_id])]['ID'].values)
+
+    for feature_name, list_transactions_by_feature in transaction_index.items():
+        pred_and_actual_values = list()
+        for t_index in list_transactions_by_feature:
+            transaction = df[df.ID == t_index]
+            all_pred = list()
+
+            # estraggo tutti i possibili pattern che stanno in questa transazione
+            for (p, feature) in t2p[t_index]:
+                # pattern in formato str
+                pattern = p.split(' ')
+
+                # ========== calcolo modello di regressione per ogni pattern e target =========
+                # se non lo hai già calcolato, calcoli il modello
+                if not os.path.isfile(f'regression_model/{feature}.sav'):
+                    # per ogni coppia (pattern, target) calcolo: predizione, pearson, n di transazioni in cui appare
+                    for doc in patterns_res_features[feature]:
+                        #if pattern == doc['p']: # TODO: devo prendere soltanto quelli che rispettano il pattern??
+                        pearson = abs(doc['pe']) #TODO: in valore assoluto?
+                        n_trans = doc['len_t']
+
+                        target_values_ = df.iloc[doc['t']][feature].values.reshape(-1, 1)
+                        icu_values_ = df.iloc[doc['t']][target_output].values
+                        target_values, icu_values = [], []
+
+                        for tt_i, tt in enumerate(target_values_):
+                            if np.isnan(tt[0]) == False:
+                                target_values.append(tt)
+                                icu_values.append(icu_values_[tt_i])
+                        #print(f"target_values \n {target_values} \n\n icu_values \n {icu_values}\n\n")
+                        model = LinearRegression().fit(target_values, icu_values)
+                        #======== salvare i modelli di regressione =========
+                        pickle.dump(model, open(f"regression_models/model_{feature}.sav", 'wb'))
+                # ======== ricarica il modello perché già ce l'ho =========
+                else:
+                    model = pickle.load(open(f"regression_models/model_{feature}.sav", 'rb'))
+
+
+
+                single_pred = np.array(df.iloc[t_index][target_output]).reshape(1, -1)
+                y_hat = model.predict(single_pred)
+                print(f'y_hat: {y_hat}')
+
+                all_pred.append([(y_hat, pearson, n_trans), (pearson, n_trans)])
+
+
+
+            f_norm = lambda v: 0.0 if v <= 0.5 else 1.0
+
+            if all_pred:
+                #TODO: formula
+                final_pred = next(map(f_norm, sum(map(lambda x: x[0][0] * x[0][1] * x[0][2], all_pred)) / sum(
+                    map(lambda x: x[1][0] * x[1][1], all_pred))))
+                pred_and_actual_values.append(
+                    (t_index, final_pred, float(transaction.ICU.values[0])))
+
+
+        n_trans_no_patterns = 0 #k_sample - len(pred_and_actual_values)
+        k_sample=0
+        precision = len(list(filter(lambda v: v[1] == v[2], pred_and_actual_values))) / float(
+            len(pred_and_actual_values) if len(pred_and_actual_values)>0 else 1)
+        print(pred_and_actual_values, precision)
+
+        #data.append((feature_name, occ, t_pearson, maxcard, k_sample, n_trans_no_patterns, precision))
+        final_pred=0
+        for i in pred_and_actual_values:
+            final_pred = final_pred + i[1]
+        final_pred = final_pred/len(pred_and_actual_values) if len(pred_and_actual_values)>0 else 1
+        final_pred = 0.0 if final_pred<=0.5 else 1.0
+        data.append((feature_name, occ, t_pearson, maxcard, precision, final_pred))
+
+    final_pred = 0
+    for i in data:
+        final_pred = final_pred + i[5]
+    final_pred = final_pred / len(data)
+    final_pred = 0.0 if final_pred <= 0.5 else 1.0
+    data.append(("FINAL TARGET", occ, t_pearson, maxcard, 0, final_pred))
+
+    print(f"data finale \n {data}")
+
+    return data
+
+
+def COPY_regression_model(input_pattern, df, df_header, features, occ, t_pearson, maxcard, target_output):
+    msg.info(f"Doing occ = {occ}, pearson = {t_pearson}, maxcard = {maxcard}")
+
+    data = list()
+    patterns_res_features, t2p = create_indexes(occ, t_pearson, maxcard)
+    # patterns_res_features => lista dei pattern per ciascun features (banalmente i file json  così come sono)
+    # t2p => dict in cui ad ogni transazione sono salvati i pattern trovati per ciascun features
+    # es. Transaction=1 esiste una lista di pattern (p1, feature1), (p2, feature1), (p3, feature99)
+
+    #print("patterns_res_features ---> ", patterns_res_features, '\n\n')
+    #print("t2p ---> ", t2p[1], '\n\n')
+
+
+    pred_and_actual_values = list()
+    features_index=dict()
+    for f in features:
+        features_index.update({f: df_header[f]})
+
+    target_output = df_header[target_output[0]]
+
+    print("input_pattern --> ", input_pattern)
+    print("features_index --> ", features_index)
+    print("target_output --> ", target_output)
+
+
+    #//////////////////////////////// REGRESSION PREDICTION ////////////////////////////////////
+
+    # PASSO 1) per ciascuna feature trovo le transazioni con quel valore e vado alla ricerca di patterns
+    # per calcolare la pearson
+
+    # 1) identificare le transazioni che hanno un valore uguale al campo nella colonna FEATURE
     transaction_index=dict()
     for f_id, f_name in features_index.items():
         transaction_index[f_name]=list(df.loc[df[f_name].astype(str).str.contains(input_pattern[f_id])]['TID'].values)
+
 
     print(f"transaction_index_list {transaction_index}")
     for feature_name, list_transactions_by_feature in transaction_index.items():
@@ -122,8 +247,12 @@ def regression_model(input_pattern, df, df_header, features, occ, t_pearson, max
                         #print(f"target_values \n {target_values} \n\n icu_values \n {icu_values}\n\n")
                         model = LinearRegression().fit(target_values, icu_values)
 
+                        #TODO: salvare i modelli di regressione
+                        print(f'MODEL: {model}')
+
                         single_pred = np.array(df.iloc[t_index][target_output]).reshape(1, -1)
                         y_hat = model.predict(single_pred)
+                        print(f'y_hat: {y_hat}')
 
                         all_pred.append([(y_hat, pearson, n_trans), (pearson, n_trans)])
 
