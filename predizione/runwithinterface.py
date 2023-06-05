@@ -1,10 +1,12 @@
 from aspars import ASPars
 from scipy import stats
 from wasabi import msg
+import pickle
 import json
 import os
 import subprocess
 import signal
+from sklearn.linear_model import LinearRegression
 import re
 import numpy as np
 
@@ -106,7 +108,7 @@ class Runwithinterface:
         msg.fail(f"Min, media, max pearson non valide: {min(pearsons)} {sum(pearsons) / float(len(pearsons))} {max(pearsons)}")
         return (pearsons, anss)
 
-    def parse_ans_JSON(self, ans, pearson, covered_transactions):
+    def parse_ans_JSON(self, ans, pearson, covered_transactions, intercept, coefficient):
         """Parserizza l'answerset e ritorna un JSON con i valori necessari"""
         patterns = list(map(lambda x: f'{x[1]}={x[2]}', re.finditer(PATTERNS_RE_JSON, ans)))
         return {
@@ -114,27 +116,28 @@ class Runwithinterface:
             'len_p': len(patterns),  # (len) pattern
             't': covered_transactions,  # transazioni coperte
             'len_t': len(covered_transactions),  # (len) transazioni coperte
-            'pe': pearson,  # pearson
+            'pe': pearson,  # pearson,
+            'const': intercept,
+            'alfa': coefficient
         }
 
-    def compute_pearson_and_covered_transactions(self, ans):
+    def compute_pearson_and_covered_transactions_coefficients(self, ans, feature_name):
         """Calcola la pearson"""
         occurrences = re.findall(OCCURRENCES_RE, ans)
         covered_transactions = list(map(lambda occ: occ[0], occurrences))
         icu = np.fromiter(map(lambda occ: occ[1], occurrences), dtype=float)
         values = np.fromiter(map(lambda occ: occ[2], occurrences), dtype=float)
 
-        return (stats.pearsonr(icu, values)[0], covered_transactions)
+        # aggiunta del modello tramite il calcolo del LinearRegression
+        model = LinearRegression().fit(values.reshape(-1, 1), icu)
+        intercept = model.intercept_
+        coefficient = model.coef_[0]
+        #print("modello di regression ---> ", model)
 
+        #pickle.dump(model, open(f"regression_models/model_{feature_name}.sav", 'wb'))
+        ## fine
 
-    '''
-    TARGETS = ['ALBUMIN_MEAN', 'BE_ARTERIAL_MEAN', 'BE_VENOUS_MEAN', 'BIC_ARTERIAL_MEAN', 'BIC_VENOUS_MEAN', 'BILLIRUBIN_MEAN', 'BLAST_MEAN',
-        'CALCIUM_MEAN', 'CREATININ_MEAN', 'FFA_MEAN', 'GGT_MEAN', 'GLUCOSE_MEAN', 'HEMATOCRITE_MEAN', 'HEMOGLOBIN_MEAN', 'INR_MEAN', 'LACTATE_MEAN',
-        'LEUKOCYTES_MEAN', 'LINFOCITOS_MEAN', 'NEUTROPHILES_MEAN', 'P02_ARTERIAL_MEAN', 'P02_VENOUS_MEAN', 'PC02_ARTERIAL_MEAN', 'PC02_VENOUS_MEAN',
-        'PCR_MEAN', 'PH_ARTERIAL_MEAN', 'PH_VENOUS_MEAN', 'PLATELETS_MEAN', 'POTASSIUM_MEAN', 'SAT02_ARTERIAL_MEAN', 'SAT02_VENOUS_MEAN', 'SODIUM_MEAN',
-        'TGO_MEAN', 'TGP_MEAN', 'TTPA_MEAN', 'UREA_MEAN', 'DIMER_MEAN', 'BLOODPRESSURE_DIASTOLIC_MEAN', 'BLOODPRESSURE_SISTOLIC_MEAN', 'HEART_RATE_MEAN',
-        'RESPIRATORY_RATE_MEAN', 'TEMPERATURE_MEAN', 'OXYGEN_SATURATION_MEAN']
-    '''
+        return (stats.pearsonr(icu, values)[0], covered_transactions, intercept, coefficient)
 
 
     def start(self, target):
@@ -170,10 +173,24 @@ class Runwithinterface:
 
                     # parsing dei risultati e del runtime
                     for ans in results[0:-4]:
-                        (pearson, covered_transactions) = self.compute_pearson_and_covered_transactions(ans)
+                        (pearson, covered_transactions, intercept, coefficient) = self.compute_pearson_and_covered_transactions_coefficients(ans, target)
                         if abs(pearson) >= pearson_t:
-                            doc = self.parse_ans_JSON(ans, pearson, covered_transactions)
-                            pearson_valid.append(doc)
+                            #print("covered transaction --- > ", covered_transactions)
+                            doc = self.parse_ans_JSON(ans, pearson, covered_transactions, intercept, coefficient)
+
+                            # cerca se già non esiste questo pattern o se stesso pattern ma in ordine differente
+                            insert = True
+                            doc['p'].sort()
+                            for pp in pearson_valid:
+                                pp['p'].sort()
+                                if np.array_equal(pp['p'], doc['p']):
+                                    insert = False
+                                    break
+
+                            if insert:
+                                pearson_valid.append(doc)
+                            else:
+                                pearson_unvalid.append(doc)
                         else:
                             pearson_unvalid.append(pearson)
                     # parsing del tempo
@@ -252,22 +269,21 @@ class Runwithinterface:
         self.execute = e
 
     def run(self):
-        #if __name__ == '__main__':
-            #os.system('rm results/*')
-            os.system('cp results.csv results.csv.bak')
-            os.system('rm results.csv')
-            os.system('echo "TARGET,OCCURRENCE_T,UTILITY_T,MAX_ITEMSET,N_ANS,TIME" > results.csv')
+        os.system('cp results.csv results.csv.bak')
+        os.system('rm results.csv')
+        os.system('echo "TARGET,OCCURRENCE_T,UTILITY_T,MAX_ITEMSET,N_ANS,TIME" > results.csv')
 
-            self.set_execute()
-            for (i, target) in enumerate(self.TARGETS):
-                if self.execute:
-                    print("target ", target)
-                    self.single_run(target)
-                else:
-                    break
-            self.set_execute(e=False)
+        self.set_execute()
+        for (i, target) in enumerate(self.TARGETS):
+            if self.execute:
+                print("target ", target)
+                self.single_run(target)
+            else:
+                break
+        self.set_execute(e=False)
 
 
+    '''
     def fig_maker(self, window):  # this should be called as a thread, then time.sleep() here would not freeze the GUI
         #names = ['group_a', 'group_b', 'group_c']
         np.random.seed(42)
@@ -294,3 +310,4 @@ class Runwithinterface:
     def delete_fig_agg(self, fig_agg):
         fig_agg.get_tk_widget().forget()
         plt.close('all')
+    '''

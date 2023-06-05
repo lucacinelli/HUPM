@@ -70,6 +70,83 @@ def create_indexes_excel(occ, pearson, maxcard):
 
     return targets, t2p
 
+def target_prediction(input_pattern, df, df_header, features, item, occ, t_pearson, maxcard, target_output):
+    msg.info("\n====== \nTARGET PREDICTION\n=======\n")
+    msg.info(f"Doing occ = {occ}, pearson = {t_pearson}, maxcard = {maxcard}")
+
+    target_output = df_header[target_output[0]]
+    features_index=dict()
+    for f in features:
+        features_index.update({df_header[f]: f})
+
+    print("features index: ", features_index)
+
+    # prendere dall'input pattern soltanto le colonne degli ITEM per controllare se sono supportati nei pattern
+    T = set()
+    for i in item:
+        value = input_pattern[i]
+        category = df_header[i]
+        T.add(f"{category}={value}")
+
+    print("Pattern in input T: ", T)
+
+
+    # inizializzare le variabili per applicare la formula di predizione finale
+    num, den = 0, 0
+
+    # PASSO 1: per ogni feature f_j (es. IL6, Glucose, etc...)
+    dir_files = f'results/json_{occ}_{t_pearson}_{maxcard}/'
+    json_files = filter(lambda f: f.endswith('.json'), os.listdir(dir_files))
+    for json_file in json_files:
+        with open(dir_files + json_file) as ifile:
+            docs = json.load(ifile)
+
+            f_j_name = json_file.split('_')[0]
+            f_j_index = features_index[f_j_name]
+            print("actual feature f_j: [", f_j_name, "] con index: ", f_j_index)
+
+            ### PASSO 2: cerca tutti i pattern supportati da  T input
+            for doc in docs:
+                p_i = set(doc['p'])
+                # TODO: prendo indifferentemente i pattern contenuti più piccoli o più grandi rispetto a T
+                if p_i.issuperset(T) or T.issuperset(p_i):
+                    c_i_j = float(doc['const'])
+                    alfa_i_j = float(doc['alfa'])
+                    pearson_i_j = float(doc['pe'])
+                    n_transaction_i_j = int(doc['len_t'])
+
+                    ### PASSO 3: da (c_i_j e alfa_i_j) ed il valore di x_j di f_j per T calcolo la funzione di regressione
+                    ## y_i_j = c_i_j + alfa_i_j * x_j
+                    x_j = float(input_pattern[f_j_index])
+                    #print("feature ", f_j_name, " la x_j: ", x_j)
+                    y_i_j = c_i_j + (alfa_i_j * x_j)
+
+                    ### PASSO 4: salvo i valori intermedi (delle y_i_j) per ogni pattern che supporta T
+                    num = num + (y_i_j * pearson_i_j * n_transaction_i_j)
+                    den = den + (pearson_i_j * n_transaction_i_j)
+
+    ### PASSO 5: dopo aver controllato tutti i pattern e calcolato i valori di predizione per  ciascun pattern
+    # calcolo la formula finale
+    ### Y_FINALE = (SOMMA di y_i_i * p_i_j * n_i_j) / (SOMMA di p_i_j * n_i_j)
+    ### Y_FINALE = NUM / DEN
+    if den!=0:
+        Y = num / den
+        Y = round(Y)
+        print("Y: ", Y)
+        if Y < 0:
+            Y = None
+    else:
+        Y = None
+
+    return Y
+
+
+
+
+
+
+
+
 
 def regression_model(input_pattern, df, df_header, features, occ, t_pearson, maxcard, target_output):
     msg.info(f"Doing occ = {occ}, pearson = {t_pearson}, maxcard = {maxcard}")
@@ -114,22 +191,22 @@ def regression_model(input_pattern, df, df_header, features, occ, t_pearson, max
                 if not os.path.isfile(f'regression_model/{feature}.sav'):
                     # per ogni coppia (pattern, target) calcolo: predizione, pearson, n di transazioni in cui appare
                     for doc in patterns_res_features[feature]:
-                        #if pattern == doc['p']: # TODO: devo prendere soltanto quelli che rispettano il pattern??
-                        pearson = abs(doc['pe']) #TODO: in valore assoluto?
-                        n_trans = doc['len_t']
+                        if pattern == doc['p']: # TODO: devo prendere soltanto quelli che rispettano il pattern??
+                            pearson = abs(doc['pe']) #TODO: in valore assoluto?
+                            n_trans = doc['len_t']
 
-                        target_values_ = df.iloc[doc['t']][feature].values.reshape(-1, 1)
-                        icu_values_ = df.iloc[doc['t']][target_output].values
-                        target_values, icu_values = [], []
+                            target_values_ = df.iloc[doc['t']][feature].values.reshape(-1, 1)
+                            icu_values_ = df.iloc[doc['t']][target_output].values
+                            target_values, icu_values = [], []
 
-                        for tt_i, tt in enumerate(target_values_):
-                            if np.isnan(tt[0]) == False:
-                                target_values.append(tt)
-                                icu_values.append(icu_values_[tt_i])
-                        #print(f"target_values \n {target_values} \n\n icu_values \n {icu_values}\n\n")
-                        model = LinearRegression().fit(target_values, icu_values)
-                        #======== salvare i modelli di regressione =========
-                        pickle.dump(model, open(f"regression_models/model_{feature}.sav", 'wb'))
+                            for tt_i, tt in enumerate(target_values_):
+                                if np.isnan(tt[0]) == False:
+                                    target_values.append(tt)
+                                    icu_values.append(icu_values_[tt_i])
+                            #print(f"target_values \n {target_values} \n\n icu_values \n {icu_values}\n\n")
+                            model = LinearRegression().fit(target_values, icu_values)
+                            #======== salvare i modelli di regressione =========
+                            pickle.dump(model, open(f"regression_models/model_{feature}.sav", 'wb'))
                 # ======== ricarica il modello perché già ce l'ho =========
                 else:
                     model = pickle.load(open(f"regression_models/model_{feature}.sav", 'rb'))

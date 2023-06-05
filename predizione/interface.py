@@ -23,6 +23,7 @@ from preprocessing import Preprocessing
 from table import Table
 from ASP_utilities import *
 from regression import *
+from regression import target_prediction
 import os
 
 def inn(filenamepath):
@@ -56,7 +57,7 @@ working_directory = os.getcwd()
 
 # TODO: sistemare con valori veri
 clustering_list = [0]
-feature_list = [71,72] #[13, 14]
+feature_list = [57,72] #[13, 14]
 item_list = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] #[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 target_list = [4] #[230]
 
@@ -107,6 +108,10 @@ def show_training_dataset(window, filename):
             # aggiunta col ID clustering, cioe un id ad ogni riga del file "mortality... " all inizio
             df_training_dataset.insert(loc=0, column='ID', value=df_training_dataset.index + 0)
             df_training_dataset_header_list = df_training_dataset.columns.tolist()
+
+            # TODO: rimuovere PERCHE senno calcola il dataset più piccolo (soltanto per DEBUG)
+            df_training_dataset = df_training_dataset.iloc[:150]
+            print(df_training_dataset)
 
             if "TRAINING_DATASET_COL" in window.AllKeysDict:
                 #for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
@@ -720,11 +725,20 @@ while True:
 
         #TODO: prevedere il for per più pazienti in input
         #input_pattern = extract_input_pattern_prediction()
-        data_regression = regression_model(data_input_prediction[0], df_training_dataset,
-                         df_training_dataset_header_list, feature_list,
+        #data_regression = regression_model(data_input_prediction[0], df_training_dataset,
+        #                 df_training_dataset_header_list, feature_list,
+        #                 occurrences, 0.5, max_card, target_list)
+
+        target_prediction_out = target_prediction(data_input_prediction[0], df_training_dataset,
+                         df_training_dataset_header_list, feature_list, item_list,
                          occurrences, 0.5, max_card, target_list)
 
-        print(f"Result (interface) DATA_REGRESSION {data_regression}")
+        print(f"Result (interface) DATA_REGRESSION {target_prediction_out}")
+
+        if target_prediction_out is None:
+            target_prediction_out = "ERRORE (NA)"
+        data_input_prediction[0][target_list[0]] = target_prediction_out
+        show_prediction(window, data_input_prediction[0], feature_list)
 
         #msg.info("start prediction regression MODEL")
         #for ddata_i, ddata in enumerate(data_regression):
