@@ -67,19 +67,19 @@ def call_automatically(call_aut):
         return
 
     show_training_dataset(window, "../Mortality_incidence_sociodemographic_and_clinical_data_in_COVID19_patients.xlsx")
-    filename = '../input_prova.csv'#sg.popup_get_file('file to open', no_window=True)
+    filename = '../input_patients.csv'#sg.popup_get_file('file to open', no_window=True)
     if Path(filename).is_file():
         try:
             global data_input_prediction
             data_input_prediction = []
             with open(filename, 'r') as f:
-                csvreader = csv.reader(f)
+                csvreader = csv.reader(f, delimiter=';')
                 for row in csvreader:
                     print(f'row {row}')
                     data_input_prediction.append(row)
 
             # data_input_prediction = (pd.read_csv(filename, delimiter=',')).columns.tolist()
-            show_prediction(window, data_input_prediction[0], feature_list)
+            show_prediction(window, data_input_prediction[1:], feature_list)
 
         except Exception as e:
             print("", end="")
@@ -110,8 +110,8 @@ def show_training_dataset(window, filename):
             df_training_dataset_header_list = df_training_dataset.columns.tolist()
 
             # TODO: rimuovere PERCHE senno calcola il dataset più piccolo (soltanto per DEBUG)
-            df_training_dataset = df_training_dataset.iloc[:150]
-            print(df_training_dataset)
+            #df_training_dataset = df_training_dataset.iloc[:150]
+            #print(df_training_dataset)
 
             if "TRAINING_DATASET_COL" in window.AllKeysDict:
                 #for widget in window['TRAINING_DATASET_COL'].Widget.winfo_children():
@@ -319,10 +319,14 @@ def extract_input_pattern_prediction():
     return input_pattern
 
 
-def show_prediction(window, copy_paste_data, feature_list):
+def show_prediction(window, copy_paste_data, feature_list, ctrl_v=False):
     data=[]
     data.append(df_training_dataset_header_list)
-    data.append(copy_paste_data)
+    if ctrl_v==False:
+        for c_p in copy_paste_data:
+            data.append(c_p)
+    else:
+        data.append(copy_paste_data)
 
     #global data_show_pattern
     #data_show_pattern = data.copy()
@@ -681,24 +685,29 @@ while True:
 
     if not isinstance(event, tuple) and (event == "Control-C" or event == "Control-c"):
         items = values['TABLE_TRAINING_DATASET']
-        lst = list(map(lambda x: df_training_dataset.values.tolist()[x], items))[0]
+        if len(items) > 0:
+            lst = list(map(lambda x: df_training_dataset.values.tolist()[x], items))[0]
+        else:
+            lst = df_training_dataset_header_list
+
         text = ""
         for l in range(0, len(lst)-1):
             text += str(lst[l])
-            text += ','
+            text += ';'
         text += str(lst[-1])
         print(text)
         pyperclip.copy(text)
         print(f"copiato text {text}")
+
 
     if not isinstance(event, tuple) and (event == "Control-V" or event == "Control-v"):
         copy_paste_data = pyperclip.lazy_load_stub_paste()
         #copy_paste_data = copy_paste_data.replace('[', '')
         #copy_paste_data = copy_paste_data.replace(']', '')
         #copy_paste_data = copy_paste_data.split(',')
-        copy_paste_data = copy_paste_data.split(',')
+        copy_paste_data = copy_paste_data.split(';')
 
-        show_prediction(window, copy_paste_data, feature_list)
+        show_prediction(window, copy_paste_data, feature_list, ctrl_v=True)
 
     if not isinstance(event, tuple) and event == 'LOAD_PATIENT':
         filename = sg.popup_get_file('file to open', no_window=True)
@@ -707,13 +716,12 @@ while True:
                 global data_input_prediction
                 data_input_prediction = []
                 with open(filename, 'r') as f:
-                    csvreader = csv.reader(f)
+                    csvreader = csv.reader(f,  delimiter=";")
                     for row in csvreader:
-                        print(f'row {row}')
                         data_input_prediction.append(row)
 
                 #data_input_prediction = (pd.read_csv(filename, delimiter=',')).columns.tolist()
-                show_prediction(window, data_input_prediction[0], feature_list)
+                show_prediction(window, data_input_prediction[1:], feature_list)
 
             except Exception as e:
                 print("", end="")
@@ -724,21 +732,17 @@ while True:
         msg.info("start prediction regression MODEL")
 
         #TODO: prevedere il for per più pazienti in input
-        #input_pattern = extract_input_pattern_prediction()
-        #data_regression = regression_model(data_input_prediction[0], df_training_dataset,
-        #                 df_training_dataset_header_list, feature_list,
-        #                 occurrences, 0.5, max_card, target_list)
+        for d_i_p in data_input_prediction[1:]:
+            target_prediction_out = target_prediction(d_i_p, df_training_dataset,
+                             df_training_dataset_header_list, feature_list, item_list,
+                             occurrences, 0.5, max_card, target_list)
 
-        target_prediction_out = target_prediction(data_input_prediction[0], df_training_dataset,
-                         df_training_dataset_header_list, feature_list, item_list,
-                         occurrences, 0.5, max_card, target_list)
+            print(f"Result idx {d_i_p[0]} (interface) DATA_REGRESSION {target_prediction_out}")
 
-        print(f"Result (interface) DATA_REGRESSION {target_prediction_out}")
-
-        if target_prediction_out is None:
-            target_prediction_out = "ERRORE (NA)"
-        data_input_prediction[0][target_list[0]] = target_prediction_out
-        show_prediction(window, data_input_prediction[0], feature_list)
+            if target_prediction_out is None:
+                target_prediction_out = "ERRORE (NA)"
+            d_i_p[target_list[0]] = target_prediction_out
+            show_prediction(window, data_input_prediction[1:], feature_list)
 
         #msg.info("start prediction regression MODEL")
         #for ddata_i, ddata in enumerate(data_regression):

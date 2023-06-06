@@ -108,12 +108,14 @@ def target_prediction(input_pattern, df, df_header, features, item, occ, t_pears
             ### PASSO 2: cerca tutti i pattern supportati da  T input
             for doc in docs:
                 p_i = set(doc['p'])
+                #print("T ", T, "\np_i ", p_i)
                 # TODO: prendo indifferentemente i pattern contenuti più piccoli o più grandi rispetto a T
                 if p_i.issuperset(T) or T.issuperset(p_i):
                     c_i_j = float(doc['const'])
                     alfa_i_j = float(doc['alfa'])
-                    pearson_i_j = float(doc['pe'])
+                    pearson_i_j = abs(float(doc['pe']))
                     n_transaction_i_j = int(doc['len_t'])
+                    pvalue_i_j = float(doc['pvalue'])
 
                     ### PASSO 3: da (c_i_j e alfa_i_j) ed il valore di x_j di f_j per T calcolo la funzione di regressione
                     ## y_i_j = c_i_j + alfa_i_j * x_j
@@ -122,17 +124,26 @@ def target_prediction(input_pattern, df, df_header, features, item, occ, t_pears
                     y_i_j = c_i_j + (alfa_i_j * x_j)
 
                     ### PASSO 4: salvo i valori intermedi (delle y_i_j) per ogni pattern che supporta T
-                    num = num + (y_i_j * pearson_i_j * n_transaction_i_j)
-                    den = den + (pearson_i_j * n_transaction_i_j)
+                    # 1) con la pearson
+                    #num = num + (y_i_j * pearson_i_j * n_transaction_i_j)
+                    #den = den + (pearson_i_j * n_transaction_i_j)
+
+                    # 2) con il p-value
+                    num = num + (y_i_j * (1-pvalue_i_j) * n_transaction_i_j)
+                    den = den + ((1-pvalue_i_j) * n_transaction_i_j)
 
     ### PASSO 5: dopo aver controllato tutti i pattern e calcolato i valori di predizione per  ciascun pattern
     # calcolo la formula finale
     ### Y_FINALE = (SOMMA di y_i_i * p_i_j * n_i_j) / (SOMMA di p_i_j * n_i_j)
     ### Y_FINALE = NUM / DEN
+    print("num: ", num)
+    print("den: ", den)
     if den!=0:
         Y = num / den
+        print("Y prima di round: ", Y)
         Y = round(Y)
         print("Y: ", Y)
+        # se negativo generiamo un messaggio di errore
         if Y < 0:
             Y = None
     else:

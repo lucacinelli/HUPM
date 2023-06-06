@@ -108,7 +108,7 @@ class Runwithinterface:
         msg.fail(f"Min, media, max pearson non valide: {min(pearsons)} {sum(pearsons) / float(len(pearsons))} {max(pearsons)}")
         return (pearsons, anss)
 
-    def parse_ans_JSON(self, ans, pearson, covered_transactions, intercept, coefficient):
+    def parse_ans_JSON(self, ans, pearson, covered_transactions, intercept, coefficient, pvalue):
         """Parserizza l'answerset e ritorna un JSON con i valori necessari"""
         patterns = list(map(lambda x: f'{x[1]}={x[2]}', re.finditer(PATTERNS_RE_JSON, ans)))
         return {
@@ -118,7 +118,8 @@ class Runwithinterface:
             'len_t': len(covered_transactions),  # (len) transazioni coperte
             'pe': pearson,  # pearson,
             'const': intercept,
-            'alfa': coefficient
+            'alfa': coefficient,
+            'pvalue': pvalue
         }
 
     def compute_pearson_and_covered_transactions_coefficients(self, ans, feature_name):
@@ -134,10 +135,25 @@ class Runwithinterface:
         coefficient = model.coef_[0]
         #print("modello di regression ---> ", model)
 
+        ###### CALCOLO DEL PVALUE ########
+        X=values.reshape(-1, 1)
+        y=np.array(icu)
+        params = np.append(model.intercept_, model.coef_)
+        predictions = model.predict(X)
+        new_X = np.append(np.ones((len(X), 1)), X, axis=1)
+        M_S_E = (sum((y - predictions) ** 2)) / (len(new_X) - len(new_X[0]))
+        v_b = M_S_E * (np.linalg.inv(np.dot(new_X.T, new_X)).diagonal())
+        s_b = np.sqrt(v_b)
+        t_b = params / s_b
+        p_val = [2 * (1 - stats.t.cdf(np.abs(i), (len(new_X) - len(new_X[0])))) for i in t_b]
+        p_val = np.round(p_val, 3)
+        pvalue = p_val[1]
+        ###### FINE CALCOLO DEL PVALUE ########
+
         #pickle.dump(model, open(f"regression_models/model_{feature_name}.sav", 'wb'))
         ## fine
 
-        return (stats.pearsonr(icu, values)[0], covered_transactions, intercept, coefficient)
+        return (stats.pearsonr(icu, values)[0], covered_transactions, intercept, coefficient, pvalue)
 
 
     def start(self, target):
@@ -173,10 +189,10 @@ class Runwithinterface:
 
                     # parsing dei risultati e del runtime
                     for ans in results[0:-4]:
-                        (pearson, covered_transactions, intercept, coefficient) = self.compute_pearson_and_covered_transactions_coefficients(ans, target)
+                        (pearson, covered_transactions, intercept, coefficient, pvalue) = self.compute_pearson_and_covered_transactions_coefficients(ans, target)
                         if abs(pearson) >= pearson_t:
                             #print("covered transaction --- > ", covered_transactions)
-                            doc = self.parse_ans_JSON(ans, pearson, covered_transactions, intercept, coefficient)
+                            doc = self.parse_ans_JSON(ans, pearson, covered_transactions, intercept, coefficient, pvalue)
 
                             # cerca se già non esiste questo pattern o se stesso pattern ma in ordine differente
                             insert = True
