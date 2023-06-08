@@ -92,7 +92,7 @@ def start(target):
                 msg.good(f'Results for occ {occ_t}, pearson {pearson_t}, max card itemset {max_card_itemset}: len(ans) {len(anss)}, usr time {run_usr}')
 
                 # scrivo i risultati
-                results_filename = f'results/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.txt'
+                results_filename = f'results_/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.txt'
                 results_body = map(lambda x: f'{x[0]} -- {x[1]}\n', zip(pearsons, anss))
                 with open(results_filename, 'w') as rfile:
                     rfile.writelines(results_body)
@@ -105,7 +105,8 @@ def start(target):
                 ifile.write(','.join(map(str, [target, occ_t, pearson_t, max_card_itemset, len(pearsons), run_usr])) + '\n')
 
                 # salvo in un file i risultati
-                with open(f'results/json_{occ_t}_{pearson_t}_{max_card_itemset}/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json', 'w') as ofile:
+                with open(
+                        f'results_/json_{occ_t}_{pearson_t}_{max_card_itemset}/{target}_{occ_t}_{pearson_t}_{max_card_itemset}.json', 'w') as ofile:
                     json.dump(pearsons, ofile)
 
                 print("PEARSOMNNNN \n\n")

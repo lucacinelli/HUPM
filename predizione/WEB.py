@@ -1,41 +1,16 @@
-from selenium import webdriver
-from selenium.common.exceptions import InvalidArgumentException
-import PySimpleGUI as sg
+import PySimpleGUIWeb as sg
 
+layout = [  [sg.Text('My Window')],
+            [sg.Input(key='-IN-'), sg.Text(size=(12,1), key='-OUT-')],
+            [sg.Button('Go'), sg.Button('Exit')]  ]
 
-def get_url(window, driver, url):
-    try:
-        driver.get(url)
-    except InvalidArgumentException as e:
-        window.write_event_value("Exception", e)
+window = sg.Window('Window Title', layout, web_port=2222, web_start_browser=True)
 
-driver = webdriver.Chrome(r"D:\Python\Project\chromedriver.exe")
-driver.maximize_window()
-
-layout = [
-    [sg.Text("URL:"), sg.Input(key="URL"), sg.Button("Get")],
-    [sg.Multiline("", size=(20, 10), expand_x=True, key='Status')],
-]
-window = sg.Window("Selenium", layout)
-
-while True:
-
+while True:             # Event Loop
     event, values = window.read()
-
-    if event == sg.WIN_CLOSED:
-        break
     print(event, values)
-    if event == 'Get':
-        window['Status'].update('')
-        window['Get'].update(disabled=True)
-        url = values["URL"].strip()
-        window.perform_long_operation(lambda window=window, driver=driver, url=url:get_url(window, driver, url), "Get Done")
-    elif event == 'Get Done':
-        window['Get'].update(disabled=False)
-    elif event == 'Exception':
-        e = values[event]
-        window['Status'].update(e)
-
-driver.close()
-driver.quit()
+    if event in (None, 'Exit'):
+        break
+    if event == 'Go':
+        window['-OUT-'].Update(values['-IN-'])
 window.close()
