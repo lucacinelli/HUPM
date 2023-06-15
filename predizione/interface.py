@@ -50,6 +50,7 @@ df_training_dataset=None
 df_training_dataset_header_list=None
 occurrences = 5
 utility = 5
+pearson_t = 0.5
 max_card = 5
 data_show_pattern = []
 sort_show_pattern_col = ['d', 'd', 'd', 'd']
@@ -204,12 +205,12 @@ def show_patterns(window, tablein, feature_list):
     for feature in feature_list:
         feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
         first_insert=1
-        file_pattern=glob.glob("".join([os.getcwd(), f"/results/json_5_0.5_5/{feature_name}*.json"]))[0]
+        file_pattern=glob.glob("".join([os.getcwd(), f"/results/json_{occurrences}_{pearson_t}_{max_card}/{feature_name}*.json"]))[0]
         with open(file_pattern, 'r') as f:
             json_data = json.load(f)
 
             for json_d in json_data:
-                pattern_concatenated = ', '.join([f"({x.split('=')[0]} : {x.split('=')[1]})" for x  in json_d['p']])
+                pattern_concatenated = ', '.join([f"{x.split(':')[0]} : {x.split(':')[1]}" for x in json_d['p']])
                 data.append([pattern_concatenated, feature_name, json_d['pe'], json_d['len_t']])
 
         #data.append(["==========", "==========", "==========",])
@@ -645,6 +646,22 @@ while True:
         #rwi.run()
         #_thread.start_new_thread(rwi.run, ())  # New statement
 
+
+
+        # TODO: nuova parte
+        # pre-processing phase (transform cell items in word)
+        print("Pre-processing \n")
+        preprocess.preproc_create_words_and_transactions_idx(list(df_training_dataset.values.tolist()), df_training_dataset_header_list, item_list)
+        #pearson_t=0
+        freq_minina=10
+        preprocess.run_mining(freq_minina, df_training_dataset, df_training_dataset_header_list, feature_list, target_list, occurrences, pearson_t, max_card)
+
+
+
+
+
+        # TODO: vecchia parte con wasp (da commentare)
+        '''
         window['execution_TEST'].update('\nExecution in progress...\n')
 
 
@@ -666,6 +683,7 @@ while True:
         thr=initializeThread(True)
         thr.start()
         thread_started=True
+        '''
 
 
     if not isinstance(event, tuple) and event == '-STOP-':
