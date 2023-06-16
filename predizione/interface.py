@@ -51,6 +51,7 @@ df_training_dataset_header_list=None
 occurrences = 5
 utility = 5
 pearson_t = 0.5
+freq_minima = 10
 max_card = 5
 data_show_pattern = []
 sort_show_pattern_col = ['d', 'd', 'd', 'd']
@@ -76,7 +77,7 @@ def call_automatically(call_aut):
             with open(filename, 'r') as f:
                 csvreader = csv.reader(f, delimiter=';')
                 for row in csvreader:
-                    print(f'row {row}')
+                    #print(f'row {row}')
                     data_input_prediction.append(row)
 
             # data_input_prediction = (pd.read_csv(filename, delimiter=',')).columns.tolist()
@@ -202,92 +203,100 @@ def show_patterns(window, tablein, feature_list):
     data=[]
     data.append(['PATTERN', 'FEATURE', 'PEARSON', 'SUPPORT'])
 
-    for feature in feature_list:
-        feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
-        first_insert=1
-        file_pattern=glob.glob("".join([os.getcwd(), f"/results/json_{occurrences}_{pearson_t}_{max_card}/{feature_name}*.json"]))[0]
-        with open(file_pattern, 'r') as f:
-            json_data = json.load(f)
+    try:
+        for feature in feature_list:
+            feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
+            first_insert=1
+            file_pattern=glob.glob("".join([os.getcwd(), f"/results/json_{occurrences}_{pearson_t}_{max_card}/{feature_name}*.json"]))[0]
+            with open(file_pattern, 'r') as f:
+                json_data = json.load(f)
 
-            for json_d in json_data:
-                pattern_concatenated = ', '.join([f"{x.split(':')[0]} : {x.split(':')[1]}" for x in json_d['p']])
-                data.append([pattern_concatenated, feature_name, json_d['pe'], json_d['len_t']])
+                for json_d in json_data:
+                    pattern_concatenated = ', '.join([f"({x.split('=')[0]} : {x.split('=')[1]})" for x in json_d['p']])
+                    data.append([pattern_concatenated, feature_name, json_d['pe'], json_d['len_t']])
 
-        #data.append(["==========", "==========", "==========",])
+            #data.append(["==========", "==========", "==========",])
 
 
-    ### export csv
-    #with open("patterns.csv", 'w') as f:
-    #    writer = csv.writer(f, delimiter=';')
-    #    writer.writerows(data)
+        ### export csv
+        #with open("patterns.csv", 'w') as f:
+        #    writer = csv.writer(f, delimiter=';')
+        #    writer.writerows(data)
 
-    ### export csv
+        ### export csv
 
-    '''
-    for feature in feature_list:
-        feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
-        first_insert=1
-        file_pattern=glob.glob("".join([os.getcwd(), f"/results/{feature_name}*.txt"]))[0]
-        with open(file_pattern, 'r') as f:
-            for row in f.readlines():
-                row_items = row.split(' -- ')
-                pearson, pattern = "", ""
-                pearson = row_items[0].strip()
-                pattern = row_items[1].strip().split(',')
-                pattern_header = pattern[::2]
-                pattern_items = pattern[1::2]
-                pattern_concatenated = ', '.join([f"({h} : {pattern_items[x]})" for x, h in enumerate(pattern_header)])
-                data.append([pattern_concatenated, feature_name if first_insert==1 else feature_name, pearson])
-                first_insert=first_insert+1
-
-        #data.append(["==========", "==========", "==========",])
         '''
-
-    global data_show_pattern
-    data_show_pattern = data.copy()
-
-
-    if "SHOW_PATTERNS_COL" in window.AllKeysDict:
-        if 'TABLE_SHOW_PATTERNS' in window.AllKeysDict:
-            window['TABLE_SHOW_PATTERNS'].update(data_show_pattern[1::])
-        else:
-            window.extend_layout(window['SHOW_PATTERNS_COL'], [[
-                        sg.Frame('Patterns identified', key='FRAME_PATTERNS', background_color='dark blue', pad=(0, 5),
-                                    layout=[[sg.Table(values=data[1::],
-                                    headings=data[0],
-                                    pad=(2,2),
-                                    max_col_width=60,
-                                    row_height=15,
-                                    border_width=5,
-                                    #expand_y=True,
-                                    auto_size_columns=True,
-                                    justification='right',
-                                    # alternating_row_color='lightblue',
-                                    num_rows=min(len(data), 20),
-                                    key="TABLE_SHOW_PATTERNS",
-                                    enable_click_events=True,
-                                    size=(wwindow, hwindow/4))
-                                ]]
-                            )
-                        ]])
-
-            #if FFF>1 and FFF<5:
-            #    for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
-            #        print(widget)
-            #        widget.destroy()
-            #window[f'TTT{FFF-1}'].Widget.destroy()
-
+        for feature in feature_list:
+            feature_name= df_training_dataset_header_list[feature] #tablein.data[0][feature]
+            first_insert=1
+            file_pattern=glob.glob("".join([os.getcwd(), f"/results/{feature_name}*.txt"]))[0]
+            with open(file_pattern, 'r') as f:
+                for row in f.readlines():
+                    row_items = row.split(' -- ')
+                    pearson, pattern = "", ""
+                    pearson = row_items[0].strip()
+                    pattern = row_items[1].strip().split(',')
+                    pattern_header = pattern[::2]
+                    pattern_items = pattern[1::2]
+                    pattern_concatenated = ', '.join([f"({h} : {pattern_items[x]})" for x, h in enumerate(pattern_header)])
+                    data.append([pattern_concatenated, feature_name if first_insert==1 else feature_name, pearson])
+                    first_insert=first_insert+1
+    
+            #data.append(["==========", "==========", "==========",])
             '''
-            t=Table()
-            t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
-                          inputdf=data, headers_list=data[0])
-            t.create_table(dimx=60, dimy=2, header_event=False)
-            newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
-                               scrollable=True, expand_x=True, expand_y=True)
-            window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
-            '''
-            window.refresh()
-            window['SHOW_PATTERNS_COL'].contents_changed()
+
+        global data_show_pattern
+        data_show_pattern = data.copy()
+
+
+        if "SHOW_PATTERNS_COL" in window.AllKeysDict:
+            if 'TABLE_SHOW_PATTERNS' in window.AllKeysDict:
+                window['TABLE_SHOW_PATTERNS'].update(data_show_pattern[1::])
+            else:
+                window.extend_layout(window['SHOW_PATTERNS_COL'], [[
+                            sg.Frame('Patterns identified', key='FRAME_PATTERNS', background_color='dark blue', pad=(0, 5),
+                                        layout=[[sg.Table(values=data[1::],
+                                        headings=data[0],
+                                        pad=(2,2),
+                                        max_col_width=60,
+                                        row_height=15,
+                                        border_width=5,
+                                        #expand_y=True,
+                                        auto_size_columns=True,
+                                        justification='right',
+                                        # alternating_row_color='lightblue',
+                                        num_rows=min(len(data), 20),
+                                        key="TABLE_SHOW_PATTERNS",
+                                        enable_click_events=True,
+                                        size=(wwindow, hwindow/4))
+                                    ]]
+                                )
+                            ]])
+
+                #if FFF>1 and FFF<5:
+                #    for widget in window['SHOW_PATTERNS_COL'].Widget.winfo_children():
+                #        print(widget)
+                #        widget.destroy()
+                #window[f'TTT{FFF-1}'].Widget.destroy()
+
+                '''
+                t=Table()
+                t.create_data(headers=len(data[0]), cols=len(data[0]), rows=len(data), size=len(data),
+                              inputdf=data, headers_list=data[0])
+                t.create_table(dimx=60, dimy=2, header_event=False)
+                newTable=sg.Column(t.table, background_color='black', pad=(0, 0), size=(850, 80), key='SHOW_PATTERNS_TABLE',
+                                   scrollable=True, expand_x=True, expand_y=True)
+                window.extend_layout(window['SHOW_PATTERNS_COL'], [[newTable, ]])
+                '''
+                window.refresh()
+                window['SHOW_PATTERNS_COL'].contents_changed()
+    except Exception as e:
+        if "SHOW_PATTERNS_COL" in window.AllKeysDict:
+            if 'TABLE_SHOW_PATTERNS' in window.AllKeysDict:
+                window['TABLE_SHOW_PATTERNS'].update([])
+        window.refresh()
+        window['SHOW_PATTERNS_COL'].contents_changed()
+        print("FILE in INPUT NOT FOUND with error e: ", e)
 
 
 def setting_table_prediction(window):
@@ -422,7 +431,7 @@ def show_regression(window, feature_list, result_regression):
 
 
 # ===================================
-sg.set_options(ttk_theme="aqua") # https://wiki.tcl-lang.org/page/List+of+ttk+Themes
+#sg.set_options(ttk_theme="aqua") # https://wiki.tcl-lang.org/page/List+of+ttk+Themes
 #TODO: per il tema
 #sg.change_look_and_feel('Material1')
 list_column_bar=[
@@ -435,8 +444,15 @@ list_column_bar=[
     sg.Radio('Item\n (yellow)', "radio", default=False, key='-item-'),  # YELLOW
     sg.Radio('Target\n (blue)', "radio", default=False, key='-target-'), #BLUE
     sg.Radio('CLEAR\n selection\n ', "radio", default=False, key='-clear_selection-'), #CLEAR
-    sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-", button_color=None),
-    sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM", key="-STOP-"),
+    sg.Column([
+        [sg.Text('Freq_min', size=(8, 3)),
+         sg.Input('1.2', enable_events=True, key='FREQ_MIN', font=('Arial Bold', 20), size=(5, 10), justification='left')],
+        [sg.Text('Pearson', size=(8, 3)),
+         sg.Input('0.5', enable_events=True, key='PEARSON_T', font=('Arial Bold', 20), size=(5, 10), justification='left')]]),
+    sg.Column([
+        [sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN E-HUPM", key="-RUN-", button_color=None)],
+         [sg.Text('', key='EXECUTION_MESSAGE_HUPM', size=(8, 3))]]),
+    #sg.Button(enable_events=True, image_data=STOP_ICO, button_text="\n\n\n\n STOP E-HUPM", key="-STOP-"),
     sg.Button(enable_events=True, image_data=RUN_ICO, button_text="\n\n\n\n RUN Regression Model", key="-START_PREDICTION-", button_color=None, visible=False),
     sg.Button(enable_events=True, button_text="SHOW PATTERNS", key="SHOW_PATTERNS"),
     ],
@@ -492,7 +508,7 @@ window = sg.Window("Extended High-Utility Pattern Mining (E-HUPM)",
                     #layout=list_column_bar,
                     layout=[[sg.Column(list_column_bar, size=(1100, 700))]],
                     resizable=True,
-                    size=(1100, 700),
+                    size=(1100, 800),
                     alpha_channel=0.99,
                     #transparent_color="white",
                     margins=(30, 0),
@@ -642,6 +658,18 @@ while True:
     if not isinstance(event, tuple) and event == "Exit" or event == sg.WIN_CLOSED:
         break
 
+    if not isinstance(event, tuple) and event == 'FREQ_MIN':
+        try:
+            freq_minina = float(window['FREQ_MIN'].get())
+        except ValueError:
+            print("FREQ_MIN: please enter an integer/float value")
+
+    if not isinstance(event, tuple) and event == 'PEARSON_T':
+        try:
+            pearson_t = float(window['PEARSON_T'].get())
+        except ValueError:
+            print("PEARSON_T: please enter an integer/float value")
+
     if not isinstance(event, tuple) and event == '-RUN-':
         #rwi.run()
         #_thread.start_new_thread(rwi.run, ())  # New statement
@@ -650,14 +678,15 @@ while True:
 
         # TODO: nuova parte
         # pre-processing phase (transform cell items in word)
+        window['EXECUTION_MESSAGE_HUPM'].update(value="executing")
+        window.refresh()
+
         print("Pre-processing \n")
         preprocess.preproc_create_words_and_transactions_idx(list(df_training_dataset.values.tolist()), df_training_dataset_header_list, item_list)
-        #pearson_t=0
-        freq_minina=10
         preprocess.run_mining(freq_minina, df_training_dataset, df_training_dataset_header_list, feature_list, target_list, occurrences, pearson_t, max_card)
 
-
-
+        window['EXECUTION_MESSAGE_HUPM'].update(value="FINISH!")
+        window.refresh()
 
 
         # TODO: vecchia parte con wasp (da commentare)
@@ -753,7 +782,7 @@ while True:
         for d_i_p in data_input_prediction[1:]:
             target_prediction_out = target_prediction(d_i_p, df_training_dataset,
                              df_training_dataset_header_list, feature_list, item_list,
-                             occurrences, 0.5, max_card, target_list)
+                             occurrences, pearson_t, max_card, target_list)
 
             print(f"Result idx {d_i_p[0]} (interface) DATA_REGRESSION {target_prediction_out}")
 

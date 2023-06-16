@@ -13,7 +13,7 @@ class Preprocessing:
         self._spmf_output_file = 'spmf_output.txt'
         self.json_save_output_folder = 'results/json_{}_{}_{}'
         self.json_save_output_file = 'results/json_{}_{}_{}/{}_{}_{}_{}.json'
-        self.word_template = "({}:{})"
+        self.word_template = "{}={}"
         self.word_set = set()
         self.dict_idx_word = {}
         self.dict_word_idx = {}
@@ -199,7 +199,7 @@ class Preprocessing:
 
             for feature in feature_list:
                 # calcolo Pearson e correlazione
-                # TODO: considerare soltanto i pattern con un valore di pearson più alto della soglia
+                # considerare soltanto i pattern con un valore di pearson più alto della soglia
                 pattern.pearson = stats.pearsonr(pattern_dict[feature], pattern_dict[target])[0]
                 if abs(pattern.pearson) >= pearson_t:
                     #print(f"feature {feature} and pearson {pattern.pearson}")
