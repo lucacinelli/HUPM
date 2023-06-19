@@ -11,8 +11,8 @@ class Preprocessing:
     def __init__(self):
         self._spmf_input_file = 'spmf_input.txt'
         self._spmf_output_file = 'spmf_output.txt'
-        self.json_save_output_folder = 'results/json_{}_{}_{}'
-        self.json_save_output_file = 'results/json_{}_{}_{}/{}_{}_{}_{}.json'
+        self.json_save_output_folder = 'results/'
+        self.json_save_output_file = 'results/{}.json'
         self.word_template = "{}={}"
         self.word_set = set()
         self.dict_idx_word = {}
@@ -64,7 +64,7 @@ class Preprocessing:
             print(f'k {k} and v {self.transaction_idx_word[k]}')
 
 
-    def run_mining(self, threshold, df, df_header, feature_list, target_list, occurrences, pearson_t, max_card):
+    def run_mining(self, threshold, df, df_header, feature_list, target_list, pearson_t):
         '''
             FASE 3)
                 applica il freq. pattern miner (con soglia freq. minima)
@@ -84,7 +84,7 @@ class Preprocessing:
         # FASE 3
         self.extract_transactions_from_patterns()
         # FASE 4
-        self.compute_correlation_and_finalizeJSON(df, df_header, feature_list, target_list, occurrences, pearson_t, max_card)
+        self.compute_correlation_and_finalizeJSON(df, df_header, feature_list, target_list, pearson_t)
 
         #print("patterns ==> ", self._patterns[:1])
 
@@ -163,7 +163,7 @@ class Preprocessing:
         return intercept, slope, pvalue
 
 
-    def compute_correlation_and_finalizeJSON(self, df, df_header, feature_list, target_list, occurrences, pearson_t, max_card):
+    def compute_correlation_and_finalizeJSON(self, df, df_header, feature_list, target_list, pearson_t):
         """Assigns to each pattern its correlation"""
 
         files_json = {}
@@ -200,7 +200,7 @@ class Preprocessing:
             for feature in feature_list:
                 # calcolo Pearson e correlazione
                 # considerare soltanto i pattern con un valore di pearson più alto della soglia
-                pattern.pearson = stats.pearsonr(pattern_dict[feature], pattern_dict[target])[0]
+                pattern.pearson = stats.pearsonr(np.array(pattern_dict[feature]), np.array(pattern_dict[target]))[0]
                 if abs(pattern.pearson) >= pearson_t:
                     #print(f"feature {feature} and pearson {pattern.pearson}")
 
@@ -227,16 +227,19 @@ class Preprocessing:
             pattern.slope = model.coef_[0]
         '''
 
-        if not os.path.exists(self.json_save_output_folder.format(occurrences, pearson_t, max_card)):
+        if not os.path.exists(self.json_save_output_folder):
             # If it doesn't exist, create it
-            os.makedirs(self.json_save_output_folder.format(occurrences, pearson_t, max_card))
+            os.makedirs(self.json_save_output_folder)
+
+        else:
+            for f in os.listdir(self.json_save_output_folder):
+                print(f)
+                os.remove(os.path.join(self.json_save_output_folder, f))
 
 
         for feature, to_write in files_json.items():
             feature_name = df_header[feature]
-            file_name = self.json_save_output_file.format(occurrences, pearson_t, max_card,
-                                                          feature_name,
-                                                          occurrences, pearson_t, max_card)
+            file_name = self.json_save_output_file.format(feature_name)
             with open(file_name, 'w') as f:
                 json.dump(to_write, f)
 
